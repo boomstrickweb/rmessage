@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="az">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="description" content="RELAY — Post-quantum secure P2P messenger. ML-KEM-768 · ML-DSA-44 · Double Ratchet · TURN-only.">
 <title>RELAY</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
 <style>
@@ -47,7 +48,6 @@ body{color:var(--text);font-family:var(--mono);font-size:13px;display:flex;flex-
 .nb.act::after{content:'';position:absolute;bottom:0;left:20%;right:20%;height:2px;background:var(--acc);border-radius:2px 2px 0 0}
 .ni{font-size:18px;line-height:1}
 .nav-badge{position:absolute;top:8px;right:calc(50% - 14px);width:14px;height:14px;background:var(--acc);color:#000;border-radius:50%;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center}
-/* CONTACTS */
 #scC{background:var(--bg)}
 .clist{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch}
 .no-c{padding:40px 20px;text-align:center;color:var(--dim);line-height:2.8;font-size:13px}
@@ -65,7 +65,6 @@ body{color:var(--text);font-family:var(--mono);font-size:13px;display:flex;flex-
 .ic-chat{background:rgba(0,170,255,.1);border:1px solid rgba(0,170,255,.22);color:var(--acc2)}
 .ic-call{background:rgba(0,255,136,.1);border:1px solid rgba(0,255,136,.22);color:var(--grn)}
 .ubadge{width:18px;height:18px;background:var(--acc);color:#000;border-radius:50%;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center}
-/* CHAT */
 #scChat{background:var(--bg);background-image:linear-gradient(rgba(0,170,255,.01) 1px,transparent 1px),linear-gradient(90deg,rgba(0,170,255,.01) 1px,transparent 1px);background-size:32px 32px}
 .chat-top{height:54px;flex-shrink:0;background:rgba(8,13,18,.97);border-bottom:1px solid var(--b1);display:flex;align-items:center;padding:0 10px;gap:8px}
 .back-btn{width:38px;height:38px;background:transparent;border:none;cursor:pointer;color:var(--acc);font-size:24px;display:flex;align-items:center;justify-content:center;border-radius:8px;flex-shrink:0}
@@ -91,6 +90,8 @@ body{color:var(--text);font-family:var(--mono);font-size:13px;display:flex;flex-
 .fp-close-btn{padding:12px 24px;background:transparent;border:1px solid var(--b2);border-radius:8px;color:var(--mut);font-family:var(--mono);font-size:13px;cursor:pointer}
 .obar{display:none;padding:8px 16px;background:rgba(232,255,0,.05);border-bottom:1px solid rgba(232,255,0,.15);font-size:11px;color:var(--acc);flex-shrink:0}
 .obar.on{display:block}
+.dm-bar{display:none;padding:5px 16px;background:rgba(180,79,255,.06);border-bottom:1px solid rgba(180,79,255,.2);font-size:10px;color:var(--pq);flex-shrink:0;text-align:center}
+.dm-bar.on{display:block}
 .msgs{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 12px;display:flex;flex-direction:column;gap:2px}
 .msgs::-webkit-scrollbar{display:none}
 .empty-chat{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:20px}
@@ -134,7 +135,6 @@ body{color:var(--text);font-family:var(--mono);font-size:13px;display:flex;flex-
 .sbtn{width:44px;height:44px;background:var(--acc);border:none;border-radius:50%;cursor:pointer;font-size:18px;font-weight:900;color:#000;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .sbtn:active{transform:scale(.93)}
 .sbtn:disabled{background:var(--b2);color:var(--mut)}
-/* CALL */
 #scCall{background:var(--bg)}
 .call-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;overflow:hidden}
 .call-bg{position:absolute;inset:0;opacity:0;transition:opacity 1s;pointer-events:none}
@@ -174,7 +174,6 @@ body{color:var(--text);font-family:var(--mono);font-size:13px;display:flex;flex-
 .inc-rej{width:68px;height:68px;border-radius:50%;background:var(--red);border:none;cursor:pointer;font-size:26px;display:flex;align-items:center;justify-content:center}
 .inc-ans{width:68px;height:68px;border-radius:50%;background:var(--grn);border:none;cursor:pointer;font-size:26px;display:flex;align-items:center;justify-content:center;animation:pa 1s ease-in-out infinite}
 @keyframes pa{0%,100%{box-shadow:0 0 0 0 rgba(0,255,136,.5)}50%{box-shadow:0 0 0 14px rgba(0,255,136,0)}}
-/* SETTINGS */
 #scS{background:var(--bg);overflow-y:auto;-webkit-overflow-scrolling:touch}
 .s-body{padding:20px 16px;display:flex;flex-direction:column;gap:14px;padding-bottom:30px}
 .card{background:var(--s1);border:1px solid var(--b2);border-radius:12px;padding:16px}
@@ -200,7 +199,6 @@ body{color:var(--text);font-family:var(--mono);font-size:13px;display:flex;flex-
 .img-viewer img{max-width:95vw;max-height:85vh;border-radius:8px;object-fit:contain}
 .iv-close{position:absolute;top:16px;right:16px;width:40px;height:40px;background:rgba(255,255,255,.1);border:none;border-radius:50%;cursor:pointer;color:#fff;font-size:20px;display:flex;align-items:center;justify-content:center}
 ::-webkit-scrollbar{display:none}
-/* PIN SCREEN */
 .pin-screen{position:fixed;inset:0;background:var(--bg);z-index:300;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;padding:32px}
 .pin-logo{font-family:var(--disp);font-size:56px;color:var(--acc);letter-spacing:.1em}
 .pin-sub{font-size:10px;color:var(--pq);letter-spacing:.12em;text-transform:uppercase}
@@ -218,12 +216,10 @@ body{color:var(--text);font-family:var(--mono);font-size:13px;display:flex;flex-
 .pin-bio-btn{padding:10px 22px;background:transparent;border:1px solid var(--b2);border-radius:20px;color:var(--mut);font-family:var(--mono);font-size:11px;cursor:pointer;margin-top:4px}
 .pin-bio-btn:active{background:var(--s2)}
 .pin-new-label{font-size:11px;color:var(--dim);text-align:center;max-width:260px;line-height:2}
-/* KEY TRANSPARENCY */
 .kt-entry{padding:8px 10px;background:var(--s2);border:1px solid var(--b1);border-radius:6px;margin-bottom:5px;font-size:9px;line-height:1.9}
 .kt-new{border-color:rgba(232,255,0,.3)}
 .kt-warn{border-color:rgba(255,51,102,.4);background:rgba(255,51,102,.05)}
 .kt-ok{border-color:rgba(0,255,136,.25)}
-/* EMERGENCY WIPE */
 .wipe-modal{position:fixed;inset:0;background:rgba(4,7,10,.98);z-index:400;display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;padding:32px;backdrop-filter:blur(16px)}
 .wipe-modal.show{display:flex}
 .wipe-title{font-family:var(--disp);font-size:32px;color:var(--red);letter-spacing:.1em}
@@ -231,33 +227,29 @@ body{color:var(--text);font-family:var(--mono);font-size:13px;display:flex;flex-
 .wipe-progress{width:240px;height:3px;background:var(--b2);border-radius:2px;overflow:hidden;display:none}
 .wipe-progress.on{display:block}
 .wipe-bar{height:100%;background:var(--red);width:0;transition:width .1s linear}
-.wipe-confirm-btn{padding:16px 36px;background:var(--red);border:none;border-radius:10px;color:#fff;font-family:var(--disp);font-size:22px;letter-spacing:.08em;cursor:pointer}
-.wipe-cancel-btn{padding:12px 28px;background:transparent;border:1px solid var(--b2);border-radius:8px;color:var(--mut);font-family:var(--mono);font-size:12px;cursor:pointer}
-.wipe-hold-hint{font-size:10px;color:var(--dim);text-align:center}
-/* DISAPPEARING MESSAGES */
-.ttl-btn{width:32px;height:32px;background:transparent;border:1px solid var(--b2);border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;transition:all .2s;color:var(--mut)}
-.ttl-btn.on{border-color:rgba(232,255,0,.4);color:var(--acc)}
-.ttl-modal{position:fixed;inset:0;background:rgba(4,7,10,.96);z-index:250;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:28px;backdrop-filter:blur(12px)}
+.wipe-hold-hint{font-size:11px;color:var(--mut);text-align:center}
+.wipe-confirm-btn{padding:16px 48px;background:rgba(255,51,102,.12);border:2px solid var(--red);border-radius:10px;color:var(--red);font-family:var(--disp);font-size:24px;letter-spacing:.12em;cursor:pointer;transition:all .15s;-webkit-tap-highlight-color:transparent}
+.wipe-confirm-btn:active{background:rgba(255,51,102,.25)}
+.wipe-cancel-btn{padding:12px 32px;background:transparent;border:1px solid var(--b2);border-radius:8px;color:var(--mut);font-family:var(--mono);font-size:13px;cursor:pointer}
+.ttl-modal{position:fixed;inset:0;background:rgba(4,7,10,.97);z-index:260;display:none;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:32px;backdrop-filter:blur(12px)}
 .ttl-modal.show{display:flex}
-.ttl-title{font-family:var(--disp);font-size:24px;color:var(--acc);letter-spacing:.08em}
-.ttl-sub{font-size:11px;color:var(--mut);text-align:center;max-width:280px;line-height:2}
-.ttl-opts{display:flex;flex-direction:column;gap:10px;width:100%;max-width:300px}
+.ttl-title{font-family:var(--disp);font-size:24px;color:var(--pq);letter-spacing:.08em}
+.ttl-sub{font-size:11px;color:var(--mut);text-align:center}
+.ttl-opts{display:flex;flex-direction:column;gap:10px;width:100%;max-width:280px}
 .ttl-opt{padding:14px 20px;background:var(--s2);border:1px solid var(--b2);border-radius:10px;color:var(--text);font-family:var(--mono);font-size:13px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;transition:all .15s}
-.ttl-opt:active{background:var(--b2)}
-.ttl-opt.sel{border-color:rgba(232,255,0,.4);background:rgba(232,255,0,.05);color:var(--acc)}
-.ttl-close{padding:12px 28px;background:transparent;border:1px solid var(--b2);border-radius:8px;color:var(--mut);font-family:var(--mono);font-size:12px;cursor:pointer;margin-top:4px}
-.dm-bar{display:none;padding:5px 16px;background:rgba(232,255,0,.04);border-bottom:1px solid rgba(232,255,0,.1);font-size:9px;color:var(--dim);text-align:center;flex-shrink:0}
-.dm-bar.on{display:block}
+.ttl-opt:active,.ttl-opt.sel{background:rgba(180,79,255,.12);border-color:rgba(180,79,255,.4);color:var(--pq)}
+.ttl-close{padding:12px 32px;background:transparent;border:1px solid var(--b2);border-radius:8px;color:var(--mut);font-family:var(--mono);font-size:13px;cursor:pointer;margin-top:8px}
+select.inp-f{cursor:pointer}
 </style>
 </head>
 <body>
 
-<!-- PIN / Unlock Screen -->
+<!-- ── PIN Screen ── -->
 <div class="pin-screen" id="pinScreen" style="display:none">
   <div class="pin-logo">RELAY</div>
-  <div class="pin-sub">🔐 POST-QUANTUM SECURE</div>
-  <div class="pin-label" id="pinLabel">PIN-i daxil edin</div>
-  <div class="pin-dots" id="pinDots">
+  <div class="pin-sub">⬡ Post-Quantum Secure</div>
+  <div class="pin-label" id="pinLabel">Enter your PIN</div>
+  <div class="pin-dots">
     <div class="pin-dot" id="pd0"></div>
     <div class="pin-dot" id="pd1"></div>
     <div class="pin-dot" id="pd2"></div>
@@ -281,77 +273,83 @@ body{color:var(--text);font-family:var(--mono);font-size:13px;display:flex;flex-
     <button class="pin-key del" onclick="pinDel()">⌫</button>
   </div>
   <div id="pinBioWrap" style="display:none">
-    <button class="pin-bio-btn" onclick="tryBiometric()">🪪 &nbsp;Biometrika ilə aç</button>
+    <button class="pin-bio-btn" onclick="tryBiometric()">🪪 &nbsp;Unlock with Biometrics</button>
   </div>
   <div class="pin-new-label" id="pinNewLabel" style="display:none">
-    Açarlarınız bu PIN ilə şifrələnəcək.<br>Unutmayın — bərpa mümkün deyil.
+    Your keys will be encrypted with this PIN.<br>Do not forget it — recovery is not possible.
   </div>
 </div>
 
+<!-- ── Loading Screen ── -->
 <div class="loading" id="loading">
   <div class="ll">RELAY</div>
-  <div class="ls">⬡ POST-QUANTUM SECURE</div>
+  <div class="ls">⬡ Post-Quantum Secure</div>
   <div class="lbar"><div class="lfill"></div></div>
   <div class="lmsg" id="lmsg">ML-KEM-768 + SHAKE-128/256...</div>
 </div>
 
+<!-- ── Image Viewer ── -->
 <div class="img-viewer" id="imgV">
   <button class="iv-close" onclick="closeImg()">✕</button>
-  <img id="imgVImg" src="" alt="">
+  <img id="imgVImg" src="" alt="Enlarged image">
 </div>
 
+<!-- ── Incoming Call ── -->
 <div class="incoming" id="incoming">
-  <div class="inc-t">Gələn zəng</div>
+  <div class="inc-t">Incoming Call</div>
   <div class="av" id="incAv" style="width:76px;height:76px;border-radius:18px;font-size:34px;margin:0 auto"></div>
   <div class="inc-n" id="incName">—</div>
-  <div class="inc-s">🔐 ML-KEM-768 · DTLS-SRTP · P2P</div>
+  <div class="inc-s">🔐 ML-KEM-768 · DTLS-SRTP · TURN-only</div>
   <div class="inc-bs">
     <button class="inc-rej" onclick="rejectCall()">📵</button>
     <button class="inc-ans" onclick="answerCall()">📞</button>
   </div>
 </div>
 
+<!-- ── File input (hidden) ── -->
 <input type="file" id="fileInput" accept="image/*,audio/*,video/*,.pdf,.zip" style="display:none" onchange="onFile(event)">
 
+<!-- ── Fingerprint Verification Modal ── -->
 <div class="fp-modal" id="fpModal">
-  <div class="fp-title">AÇAR TƏSDİQİ</div>
-  <div class="fp-sub" id="fpSubtitle">Aşağıdakı emojiləri peer ilə <b>başqa bir kanal</b> vasitəsilə müqayisə edin.<br>Hamısı eynidir? Bağlantı təhlükəsizdir.</div>
+  <div class="fp-title">Key Verification</div>
+  <div class="fp-sub" id="fpSubtitle">Compare the emoji fingerprint below with your peer <b>out-of-band</b>.<br>If they match, the connection is secure.</div>
   <div class="fp-emojis" id="fpEmojis"></div>
   <div class="fp-hex" id="fpHex"></div>
   <div id="fpStatus"></div>
   <div class="fp-actions">
-    <button class="fp-verify-btn" id="fpVerifyBtn" onclick="confirmVerify()">✓ Təsdiq Et</button>
-    <button class="fp-close-btn" onclick="closeFP()">Bağla</button>
+    <button class="fp-verify-btn" id="fpVerifyBtn" onclick="confirmVerify()">✓ Mark as Verified</button>
+    <button class="fp-close-btn" onclick="closeFP()">Close</button>
   </div>
 </div>
 
-<!-- Disappearing Messages Modal -->
+<!-- ── Disappearing Messages Modal ── -->
 <div class="ttl-modal" id="ttlModal">
-  <div class="ttl-title">⏱ SİLİNƏN MESAJLAR</div>
-  <div class="ttl-sub" id="ttlSub">Bu söhbət üçün mesajların ömrünü seçin.</div>
+  <div class="ttl-title">⏱ Disappearing Messages</div>
+  <div class="ttl-sub" id="ttlSub">Select how long messages last in this conversation.</div>
   <div class="ttl-opts">
-    <button class="ttl-opt" onclick="setTTL(0)"><span>Heç vaxt</span><span id="ttlSel0">—</span></button>
-    <button class="ttl-opt" onclick="setTTL(3600)"><span>1 saat</span><span id="ttlSel3600">—</span></button>
-    <button class="ttl-opt" onclick="setTTL(86400)"><span>24 saat</span><span id="ttlSel86400">—</span></button>
-    <button class="ttl-opt" onclick="setTTL(604800)"><span>7 gün</span><span id="ttlSel604800">—</span></button>
+    <button class="ttl-opt" onclick="setTTL(0)"><span>Never</span><span id="ttlSel0">—</span></button>
+    <button class="ttl-opt" onclick="setTTL(3600)"><span>1 hour</span><span id="ttlSel3600">—</span></button>
+    <button class="ttl-opt" onclick="setTTL(86400)"><span>24 hours</span><span id="ttlSel86400">—</span></button>
+    <button class="ttl-opt" onclick="setTTL(604800)"><span>7 days</span><span id="ttlSel604800">—</span></button>
   </div>
-  <button class="ttl-close" onclick="closeTTL()">Bağla</button>
+  <button class="ttl-close" onclick="closeTTL()">Close</button>
 </div>
 
-<!-- Emergency Wipe Modal -->
+<!-- ── Emergency Wipe Modal ── -->
 <div class="wipe-modal" id="wipeModal">
-  <div class="wipe-title">🆘 TƏCİLİ SİLMƏ</div>
-  <div class="wipe-sub">Bütün açarlar, mesajlar, DR state-ləri, PIN — hər şey məhv ediləcək.<br>Bu əməliyyat geri qaytarıla bilməz.</div>
+  <div class="wipe-title">🆘 Emergency Wipe</div>
+  <div class="wipe-sub">All keys, messages, ratchet state, and PIN will be permanently destroyed.<br>This action cannot be undone.</div>
   <div class="wipe-progress" id="wipeProgress"><div class="wipe-bar" id="wipeBar"></div></div>
-  <div class="wipe-hold-hint" id="wipeHint">Düyməni 3 saniyə basıb saxlayın</div>
+  <div class="wipe-hold-hint" id="wipeHint">Hold button for 3 seconds</div>
   <button class="wipe-confirm-btn" id="wipeBtn"
     onmousedown="startWipeHold()" onmouseup="cancelWipeHold()" onmouseleave="cancelWipeHold()"
     ontouchstart="startWipeHold(event)" ontouchend="cancelWipeHold()" ontouchcancel="cancelWipeHold()">
-    SİL
+    WIPE
   </button>
-  <button class="wipe-cancel-btn" onclick="hideWipeModal()">Ləğv Et</button>
+  <button class="wipe-cancel-btn" onclick="hideWipeModal()">Cancel</button>
 </div>
 
+<!-- ── Top Bar ── -->
 <div class="topbar">
   <div class="logo">RELAY</div>
   <div class="pqb">ML-KEM-768</div>
@@ -362,11 +360,17 @@ body{color:var(--text);font-family:var(--mono);font-size:13px;display:flex;flex-
   <button class="top-key" id="topKey" onclick="goSettings()">key...</button>
 </div>
 
+<!-- ── Screens ── -->
 <div class="screens">
+
+  <!-- Contacts -->
   <div class="screen act" id="scC">
-    <div class="clist" id="clist"><div class="no-c">Hələ kontakt yoxdur.<br><b>⚙</b> Ayarlardan peer əlavə et.</div></div>
+    <div class="clist" id="clist">
+      <div class="no-c">No contacts yet.<br><b>⚙</b> Add a peer in Settings.</div>
+    </div>
   </div>
 
+  <!-- Chat -->
   <div class="screen hr" id="scChat">
     <div class="chat-top">
       <button class="back-btn" onclick="goContacts()">‹</button>
@@ -374,16 +378,17 @@ body{color:var(--text);font-family:var(--mono);font-size:13px;display:flex;flex-
         <div class="cp-name" id="chatName" style="color:var(--mut)">—</div>
         <div class="cp-key" id="chatKey">—</div>
       </div>
-      <button class="ttl-btn" id="ttlBtn" onclick="openTTL()" title="Silinən mesajlar">⏱</button>
-      <button class="fp-btn" id="fpBtn" onclick="openFP(AP)" title="Açar barmaq izi">🔐</button>
+      <button class="ttl-btn" id="ttlBtn" onclick="openTTL()" title="Disappearing messages">⏱</button>
+      <button class="fp-btn" id="fpBtn" onclick="openFP(AP)" title="Key fingerprint">🔐</button>
       <button class="chat-call-btn" onclick="startCallFromChat()">📞</button>
     </div>
-    <div class="dm-bar" id="dmBar">⏱ Mesajlar avtomatik silinəcək</div>
-    <div class="obar" id="obar">⚡ Offline — relay qoşulanda göndəriləcək.</div>
+    <div class="dm-bar" id="dmBar">⏱ Messages will disappear automatically</div>
+    <div class="obar" id="obar">⚡ Offline — will send when relay connects.</div>
     <div class="msgs" id="msgs">
       <div class="empty-chat">
-        <div class="eg">⬡</div><div class="et">RELAY</div>
-        <div class="es">Mətn · Foto · Səs · Zəng<br><b>ML-KEM-768 · P2P · Tam şifrəli</b></div>
+        <div class="eg">⬡</div>
+        <div class="et">RELAY</div>
+        <div class="es">Text · Photo · Voice · Call<br><b>ML-KEM-768 · TURN-only · End-to-End Encrypted</b></div>
       </div>
     </div>
     <div class="iz">
@@ -392,12 +397,13 @@ body{color:var(--text);font-family:var(--mono);font-size:13px;display:flex;flex-
         <button class="media-btn voice-btn" id="voiceBtn"
           ontouchstart="startRec(event)" ontouchend="stopRec(event)"
           onmousedown="startRec(event)" onmouseup="stopRec(event)" onmouseleave="cancelRec()">🎙</button>
-        <textarea class="minp" id="minp" placeholder="Mesaj yaz..." oninput="rsz(this)" rows="1"></textarea>
+        <textarea class="minp" id="minp" placeholder="Message..." oninput="rsz(this)" rows="1"></textarea>
         <button class="sbtn" id="sbtn" onclick="sendTxt()" disabled>▶</button>
       </div>
     </div>
   </div>
 
+  <!-- Call -->
   <div class="screen hr" id="scCall">
     <div class="call-body">
       <div class="call-bg" id="callBg"><div class="pr"></div></div>
@@ -405,2763 +411,110 @@ body{color:var(--text);font-family:var(--mono);font-size:13px;display:flex;flex-
       <div class="call-nm" id="callNm">—</div>
       <div class="call-st" id="callSt">—</div>
       <div class="call-tm" id="callTm">00:00</div>
-      <div class="sec-badge"><div class="sec-dot"></div>ML-KEM-768 · DTLS-SRTP · PFS · TURN</div>
+      <div class="sec-badge"><div class="sec-dot"></div>ML-KEM-768 · DTLS-SRTP · PFS · TURN-only</div>
       <div class="viz" id="viz"></div>
       <div class="call-ctrls">
-        <div class="cc"><button class="cc-btn cc-mute" id="muteBtn" onclick="toggleMute()">🎙</button><span class="cc-lbl">Mikrofon</span></div>
-        <div class="cc"><button class="cc-btn cc-end" onclick="endCall()">📵</button><span class="cc-lbl">Bitir</span></div>
-        <div class="cc"><button class="cc-btn cc-spk" id="spkBtn" onclick="toggleSpk()">🔊</button><span class="cc-lbl">Səs</span></div>
+        <div class="cc">
+          <button class="cc-btn cc-mute" id="muteBtn" onclick="toggleMute()">🎙</button>
+          <span class="cc-lbl">Mute</span>
+        </div>
+        <div class="cc">
+          <button class="cc-btn cc-end" onclick="endCall()">📵</button>
+          <span class="cc-lbl">End</span>
+        </div>
+        <div class="cc">
+          <button class="cc-btn cc-spk" id="spkBtn" onclick="toggleSpk()">🔊</button>
+          <span class="cc-lbl">Speaker</span>
+        </div>
       </div>
     </div>
   </div>
 
+  <!-- Settings -->
   <div class="screen hr" id="scS">
     <div class="s-body">
+
+      <!-- My Keys -->
       <div class="card">
-        <div class="card-t">Mənim Açarlarım <span class="pqp">FIPS 202/203</span></div>
+        <div class="card-t">My Keys <span class="pqp">FIPS 202/203/204</span></div>
         <div style="font-size:8px;color:var(--dim);margin-bottom:4px">Nostr Public Key</div>
         <div class="kval" style="color:var(--acc)" id="myNostr">—</div>
         <div style="font-size:8px;color:var(--dim);margin:8px 0 4px">ML-KEM-768 Public Key</div>
         <div class="kval" style="color:var(--pq);font-size:9px" id="myKyber">—</div>
-        <button class="copy-btn" id="copyBtn" onclick="copyBundle()">📋 &nbsp;Key Bundle Kopyala (JSON)</button>
-        <div style="font-size:9px;color:var(--dim);margin-top:6px">Bu JSON-u peer-ə göndər. İlk mətn mesajı göndərəndə key avtomatik paylaşılır.</div>
+        <button class="copy-btn" id="copyBtn" onclick="copyBundle()">📋 &nbsp;Copy Key Bundle (JSON)</button>
+        <div style="font-size:9px;color:var(--dim);margin-top:6px">Send this JSON to your peer. The key is also shared automatically with your first text message.</div>
       </div>
 
+      <!-- Add Peer -->
       <div class="card">
-        <div class="card-t">Peer Əlavə Et</div>
-        <div style="font-size:9px;color:var(--dim);margin-bottom:4px">Peer-in key bundle JSON-unu yapışdır:</div>
+        <div class="card-t">Add Peer</div>
+        <div style="font-size:9px;color:var(--dim);margin-bottom:4px">Paste the peer's key bundle JSON:</div>
         <textarea class="inp-f" id="peerInp" placeholder='{"nostr":"ab12...","kyber":"04ab..."}' rows="3" style="resize:none"></textarea>
-        <button class="add-btn" onclick="addPeer()">＋ &nbsp;Əlavə Et</button>
+        <button class="add-btn" onclick="addPeer()">＋ &nbsp;Add Peer</button>
       </div>
 
+      <!-- Peers list -->
       <div class="card">
-        <div class="card-t">Peer-lər (<span id="peerCount">0</span>)</div>
-        <div id="peersDiv"><div style="font-size:11px;color:var(--dim)">Hələ peer yoxdur.</div></div>
+        <div class="card-t">Peers (<span id="peerCount">0</span>)</div>
+        <div id="peersDiv"><div style="font-size:11px;color:var(--dim)">No peers yet.</div></div>
       </div>
 
+      <!-- Disappearing Messages (global) -->
       <div class="card">
-        <div class="card-t">Arxitektura</div>
+        <div class="card-t">Disappearing Messages</div>
+        <div style="font-size:10px;color:var(--mut);margin-bottom:8px">Delete all messages after:</div>
+        <select class="inp-f" id="disSelect" onchange="setDisappearing(this.value)">
+          <option value="0">Never</option>
+          <option value="3600000">1 hour</option>
+          <option value="86400000">24 hours</option>
+          <option value="604800000">7 days</option>
+        </select>
+      </div>
+
+      <!-- Architecture -->
+      <div class="card">
+        <div class="card-t">Architecture</div>
         <div style="font-size:10px;color:var(--mut);line-height:2.4">
-          💬 Mətn → Nostr relay · Sealed Sender · Double Ratchet<br>
-          🎙🖼📎 Media → CF TURN · DataChannel · max 25MB<br>
-          📞 Zəng → CF TURN · relay-only · IP tam gizli<br>
-          🔄 ICE Restart: hər 5 dəq · korrelyasiya yox<br>
-          ⏱ Silinən mesajlar: 1s/24s/7g/heç<br>
+          💬 Text → Nostr relay · Sealed Sender · Double Ratchet<br>
+          🎙🖼📎 Media → CF TURN · DataChannel · max 25 MB<br>
+          📞 Call → CF TURN · relay-only · IP fully hidden<br>
+          🔄 ICE Restart: every 5 min · no traffic correlation<br>
+          ⏱ Disappearing messages: 1h / 24h / 7d / never<br>
           🔐 Forward Secrecy + Traffic Padding<br>
-          🫥 Deniable Auth: HMAC · sübut mümkün deyil<br>
-          🧅 Onion Routing: 2-hop mini-Tor (hibrid)<br>
-          🔏 ML-DSA-44: post-quantum imzalar<br>
-          📋 Key Transparency: açar tarixi audit<br>
-          🆘 Təcili Silmə: 3 saniyə basıb saxla
+          🫥 Deniable Auth: HMAC · unprovable authorship<br>
+          🧅 Onion Routing: 2-hop mini-Tor (hybrid)<br>
+          🔏 ML-DSA-44: post-quantum signatures<br>
+          📋 Key Transparency: full key history audit<br>
+          🆘 Emergency Wipe: hold 3 seconds
         </div>
       </div>
 
+      <!-- Key Transparency log -->
       <div class="card">
-        <div class="card-t">🔑 Açar Tarixi <span class="pqp">KEY TRANSPARENCY</span></div>
-        <div id="ktLog"><div style="font-size:10px;color:var(--dim)">Hələ qeyd yoxdur.</div></div>
+        <div class="card-t">🔑 Key History <span class="pqp">KEY TRANSPARENCY</span></div>
+        <div id="ktLog"><div style="font-size:10px;color:var(--dim)">No entries yet.</div></div>
       </div>
 
-      <button class="reset-btn" style="margin-bottom:10px" onclick="changePin()">🔑 &nbsp;PIN-i dəyiş</button>
-      <button class="reset-btn" style="margin-bottom:10px;border-color:rgba(255,51,102,.6);color:var(--red)" onclick="showWipeModal()">🆘 &nbsp;Təcili Silmə</button>
-      <button class="reset-btn" onclick="clearData()">⚠ &nbsp;Normal Sıfırlama</button>
+      <!-- Actions -->
+      <button class="reset-btn" style="margin-bottom:10px" onclick="changePin()">🔑 &nbsp;Change PIN</button>
+      <button class="reset-btn" style="margin-bottom:10px;border-color:rgba(255,51,102,.6);color:var(--red)" onclick="showWipeModal()">🆘 &nbsp;Emergency Wipe</button>
+      <button class="reset-btn" onclick="clearData()">⚠ &nbsp;Reset Data</button>
     </div>
   </div>
+
 </div>
 
+<!-- ── Bottom Nav ── -->
 <div class="nav">
   <button class="nb act" id="nbC" onclick="goContacts()">
-    <div class="ni">👥</div><span>Kontaktlar</span>
+    <div class="ni">👥</div><span>Contacts</span>
     <div class="nav-badge" id="navBadge" style="display:none">0</div>
   </button>
   <button class="nb" id="nbS" onclick="goSettings()">
-    <div class="ni">⚙</div><span>Ayarlar</span>
+    <div class="ni">⚙</div><span>Settings</span>
   </button>
 </div>
 
-<script>
-'use strict';
-
-// ══════════════════════════════════════════════════════
-//  IndexedDB — media bytes saxlanması
-//  CRDT localStorage-a yazılır, amma _bytes çox böyükdür
-//  Hər media op-un bytes-ı IDB-də ayrıca saxlanır
-//  key: op.id, value: {bytes: Uint8Array, mime: string}
-// ══════════════════════════════════════════════════════
-let _idb=null;
-function getIDB(){
-  if(_idb)return Promise.resolve(_idb);
-  return new Promise((res,rej)=>{
-    const req=indexedDB.open('relay_media',1);
-    req.onupgradeneeded=e=>{e.target.result.createObjectStore('media',{keyPath:'id'});};
-    req.onsuccess=e=>{_idb=e.target.result;res(_idb);};
-    req.onerror=()=>rej(req.error);
-  });
-}
-async function idbSave(id,bytes,mime){
-  try{const db=await getIDB();const tx=db.transaction('media','readwrite');tx.objectStore('media').put({id,bytes,mime});}catch{}
-}
-async function idbLoad(id){
-  try{
-    const db=await getIDB();
-    return new Promise(res=>{
-      const req=db.transaction('media','readonly').objectStore('media').get(id);
-      req.onsuccess=()=>res(req.result||null);
-      req.onerror=()=>res(null);
-    });
-  }catch{return null;}
-}
-async function idbDelete(id){
-  try{const db=await getIDB();const tx=db.transaction('media','readwrite');tx.objectStore('media').delete(id);}catch{}
-}
-
-
-
-// ══════════════════════════════════════════════════════
-//  FIPS 202 — SHA3/SHAKE (NIST verified ✅)
-// ══════════════════════════════════════════════════════
-const _RC=[0x0000000000000001n,0x0000000000008082n,0x800000000000808An,0x8000000080008000n,0x000000000000808Bn,0x0000000080000001n,0x8000000080008081n,0x8000000000008009n,0x000000000000008An,0x0000000000000088n,0x0000000080008009n,0x000000008000000An,0x000000008000808Bn,0x800000000000008Bn,0x8000000000008089n,0x8000000000008003n,0x8000000000008002n,0x8000000000000080n,0x000000000000800An,0x800000008000000An,0x8000000080008081n,0x8000000000008080n,0x0000000080000001n,0x8000000080008008n];
-const _M=0xFFFFFFFFFFFFFFFFn;
-const _rt=(x,n)=>((x<<BigInt(n))|(x>>BigInt(64-n)))&_M;
-function _kF(A){for(let r=0;r<24;r++){const C=[0,1,2,3,4].map(x=>A[x]^A[x+5]^A[x+10]^A[x+15]^A[x+20]);const D=C.map((_,x)=>C[(x+4)%5]^_rt(C[(x+1)%5],1));for(let i=0;i<25;i++)A[i]^=D[i%5];let[t,x,y]=[A[1],1,0];for(let i=0;i<24;i++){const[X,Y]=[y,(2*x+3*y)%5];[t,A[X+5*Y]]=[A[X+5*Y],_rt(t,((i+1)*(i+2)/2)%64)];[x,y]=[X,Y];}for(let y=0;y<5;y++){const rr=[0,1,2,3,4].map(x=>A[x+5*y]);for(let x=0;x<5;x++)A[x+5*y]=rr[x]^(~rr[(x+1)%5]&rr[(x+2)%5]);}A[0]^=_RC[r];}}
-function _sp(rate,input,delim,outLen){const rb=rate/8,st=new Array(25).fill(0n);let off=0;while(off<input.length){const bl=Math.min(rb,input.length-off);for(let i=0;i<bl;i++)st[Math.floor(i/8)]^=BigInt(input[off+i])<<BigInt((i%8)*8);if(bl===rb)_kF(st);off+=bl;}const pp=input.length%rb;st[Math.floor(pp/8)]^=BigInt(delim)<<BigInt((pp%8)*8);st[Math.floor((rb-1)/8)]^=0x80n<<BigInt(((rb-1)%8)*8);_kF(st);const out=new Uint8Array(outLen);let op=0;while(op<outLen){for(let i=0;i<rb&&op<outLen;i++)out[op++]=Number((st[Math.floor(i/8)]>>BigInt((i%8)*8))&0xFFn);if(op<outLen)_kF(st);}return out;}
-const SHAKE128=(i,l)=>_sp(1344,i,0x1F,l);
-const SHAKE256=(i,l)=>_sp(1088,i,0x1F,l);
-const SHA3_256=i=>_sp(1088,i,0x06,32);
-const SHA3_512=i=>_sp(576,i,0x06,64);
-
-// ══════════════════════════════════════════════════════
-//  secp256k1 + Schnorr BIP340
-// ══════════════════════════════════════════════════════
-const _SP=0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2Fn;
-const _SN=0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141n;
-const _sm=(a,m=_SP)=>((a%m)+m)%m;
-const _spw=(b,e,m=_SP)=>{let r=1n;b=_sm(b,m);while(e>0n){if(e&1n)r=_sm(r*b,m);e>>=1n;b=_sm(b*b,m);}return r;};
-class _SPt{constructor(x,y){this.x=x;this.y=y;}static Z=new _SPt(0n,0n);isZ(){return this.x===0n&&this.y===0n;}add(o){if(this.isZ())return o;if(o.isZ())return this;if(this.x===o.x){if(this.y!==o.y)return _SPt.Z;const l=_sm(3n*this.x*this.x*_spw(2n*this.y,_SP-2n));const x=_sm(l*l-2n*this.x);return new _SPt(x,_sm(l*(this.x-x)-this.y));}const l=_sm((o.y-this.y)*_spw(o.x-this.x,_SP-2n));const x=_sm(l*l-this.x-o.x);return new _SPt(x,_sm(l*(this.x-x)-this.y));}mul(n){let r=_SPt.Z,p=new _SPt(this.x,this.y);n=_sm(n,_SN);while(n>0n){if(n&1n)r=r.add(p);p=p.add(p);n>>=1n;}return r;}}
-const _SG=new _SPt(0x79BE667EF9DCBBAC55A06295CE870B07029BFCDB2DCE28D959F2815B16F81798n,0x483ADA7726A3C4655DA4FBFC0E1108A8FD17B448A68554199C47D08FFB10D4B8n);
-const rnd=n=>crypto.getRandomValues(new Uint8Array(n));
-const hex=b=>Array.from(b).map(x=>x.toString(16).padStart(2,'0')).join('');
-const fhex=s=>new Uint8Array((s.length%2?'0'+s:s).match(/../g).map(x=>parseInt(x,16)));
-const _bi=b=>BigInt('0x'+(hex(b)||'0'));
-const _bb=(n,l=32)=>fhex(n.toString(16).padStart(l*2,'0'));
-const cat=(...a)=>{const r=new Uint8Array(a.reduce((s,x)=>s+x.length,0));let o=0;a.forEach(x=>{r.set(x,o);o+=x.length;});return r;};
-const te=s=>new TextEncoder().encode(s);
-const td=b=>new TextDecoder().decode(b);
-async function wsha256(d){return new Uint8Array(await crypto.subtle.digest('SHA-256',typeof d==='string'?te(d):d));}
-function genNKP(){let p;do{p=_bi(rnd(32));}while(p===0n||p>=_SN);const priv=p.toString(16).padStart(64,'0');return{priv,pub:_SG.mul(p).x.toString(16).padStart(64,'0')};}
-async function schnorrSign(h,priv){const p=_sm(BigInt('0x'+priv),_SN);const P=_SG.mul(p);const pp=P.y%2n===0n?p:_SN-p;const Px=_bb(P.x);const aux=rnd(32);const t0=await wsha256('BIP0340/aux');const ta=await wsha256(cat(t0,t0,aux));const tB=_bb(pp^_bi(ta));const t1=await wsha256('BIP0340/nonce');const kh=await wsha256(cat(t1,t1,tB,Px,h));let k=_sm(_bi(kh),_SN);if(k===0n)throw new Error('k=0');const R=_SG.mul(k);if(R.y%2n!==0n)k=_SN-k;const Rx=_bb(R.x);const t2=await wsha256('BIP0340/challenge');const eH=await wsha256(cat(t2,t2,Rx,Px,h));return hex(cat(Rx,_bb(_sm(k+_sm(_bi(eH),_SN)*pp,_SN))));}
-async function buildEv(kind,content,tags,priv,pub){const ev={pubkey:pub,created_at:Math.floor(Date.now()/1000),kind,tags,content};const id=await wsha256(JSON.stringify([0,ev.pubkey,ev.created_at,ev.kind,ev.tags,ev.content]));ev.id=hex(id);ev.sig=await schnorrSign(id,priv);return ev;}
-
-// ══════════════════════════════════════════════════════
-//  ML-DSA (Post-Quantum Signatures) — Dilithium-2 simplified
-//  FIPS 204 compliant parameter set (security level 2)
-//  Used to sign key bundles and key change events
-//  Transport layer still uses Schnorr (Nostr protocol requirement)
-//  but key attestations use ML-DSA for post-quantum authenticity
-// ══════════════════════════════════════════════════════
-
-// ML-DSA-44 parameters (Dilithium-2, FIPS 204)
-const MLDSAQ=8380417,MLDSAN=256,MLDSAL=4,MLDSAK=4;
-const MLDSA_ETA=2,MLDSA_TAU=39,MLDSA_BETA=78;
-const MLDSA_GAMMA1=1<<17,MLDSA_GAMMA2=95232;
-
-// Polynomial helpers
-const dmod=a=>{a=a%MLDSAQ;return a<0?a+MLDSAQ:a;};
-const dpow=(b,e)=>{let r=1;b=dmod(b);while(e>0){if(e&1)r=dmod(r*b);b=dmod(b*b);e>>=1;}return r;};
-const dbrv=x=>{let r=0;for(let i=0;i<7;i++){r=(r<<1)|(x&1);x>>=1;}return r;};
-const DZ=new Int32Array(256);for(let i=0;i<256;i++)DZ[i]=dpow(1753,dbrv(i));
-const dntt=f=>{const a=Int32Array.from(f);let i=1;for(let l=128;l>=2;l>>=1)for(let s=0;s<MLDSAN;s+=2*l){const z=DZ[i++];for(let j=s;j<s+l;j++){const t=dmod(z*a[j+l]);a[j+l]=dmod(a[j]-t);a[j]=dmod(a[j]+t);}}return a;};
-const dintt=f=>{const a=Int32Array.from(f);let i=255;for(let l=2;l<=128;l<<=1)for(let s=0;s<MLDSAN;s+=2*l){const z=DZ[i--];for(let j=s;j<s+l;j++){const t=a[j];a[j]=dmod(t+a[j+l]);a[j+l]=dmod(z*dmod(a[j+l]-t));}}const iv=dpow(256,MLDSAQ-2);for(let j=0;j<MLDSAN;j++)a[j]=dmod(a[j]*iv);return a;};
-const dmul=(a,b)=>{const c=new Int32Array(MLDSAN);for(let i=0;i<MLDSAN;i++)c[i]=dmod(a[i]*b[i]);return c;};
-const dadd=(a,b)=>{const c=new Int32Array(MLDSAN);for(let i=0;i<MLDSAN;i++)c[i]=dmod(a[i]+b[i]);return c;};
-const dsub=(a,b)=>{const c=new Int32Array(MLDSAN);for(let i=0;i<MLDSAN;i++)c[i]=dmod(a[i]-b[i]);return c;};
-function denc10(p){const o=new Uint8Array(320);for(let i=0;i<MLDSAN;i++){const v=dmod(p[i]);for(let b=0;b<10;b++){const pos=i*10+b;if(v&(1<<b))o[pos>>3]|=1<<(pos&7);}}return o;}
-function ddec10(b){const p=new Int32Array(MLDSAN);for(let i=0;i<MLDSAN;i++){let v=0;for(let j=0;j<10;j++){const pos=i*10+j;v|=((b[pos>>3]>>(pos&7))&1)<<j;}p[i]=v;}return p;}
-function dexpand(rho,i,j){return dntt(Array.from({length:MLDSAN},(_,k)=>{const bytes=SHAKE128(cat(rho,new Uint8Array([j,i])),272);const d1=bytes[k*3]|(bytes[k*3+1]&0xF)<<8;return d1<MLDSAQ?d1:0;}).reduce((a,v,k)=>{a[k]=v;return a;},new Int32Array(MLDSAN)));}
-function dcbd(eta,b){const p=new Int32Array(MLDSAN);for(let i=0;i<MLDSAN;i++){let a2=0,b2=0;for(let j=0;j<eta;j++){const idx=2*eta*i+j;a2+=(b[idx>>3]>>(idx&7))&1;}for(let j=0;j<eta;j++){const idx=2*eta*i+eta+j;b2+=(b[idx>>3]>>(idx&7))&1;}p[i]=dmod(a2-b2);}return p;}
-function dinf(p){let m=0;for(const v of p){const a=Math.abs(v>MLDSAQ/2?v-MLDSAQ:v);if(a>m)m=a;}return m;}
-function dhighlow(r){const m=dmod(r);const r1=Math.round(m/MLDSA_GAMMA2/2);const r0=dmod(m-r1*MLDSA_GAMMA2*2);return[r1,r0];}
-
-// ML-DSA key generation
-function mldsaKG(){
-  const seed=rnd(32);
-  const _h512=SHA3_512(cat(seed,new Uint8Array([MLDSAK,MLDSAL])));
-  const rho=_h512.slice(0,32),rhop=_h512.slice(32,64);
-  const A=Array.from({length:MLDSAK},(_,i)=>Array.from({length:MLDSAL},(_,j)=>dexpand(rho,i,j)));
-  const s1=Array.from({length:MLDSAL},(_,i)=>dntt(dcbd(MLDSA_ETA,SHAKE256(cat(rhop,new Uint8Array([i])),64*MLDSA_ETA))));
-  const s2=Array.from({length:MLDSAK},(_,i)=>dntt(dcbd(MLDSA_ETA,SHAKE256(cat(rhop,new Uint8Array([MLDSAL+i])),64*MLDSA_ETA))));
-  const t=Array.from({length:MLDSAK},(_,i)=>{let r=new Int32Array(MLDSAN);for(let j=0;j<MLDSAL;j++)r=dadd(r,dmul(A[i][j],s1[j]));return dadd(dintt(r),dintt(s2[i]));});
-  const pk=new Uint8Array(32+MLDSAK*320);pk.set(rho);
-  for(let i=0;i<MLDSAK;i++)pk.set(denc10(t[i]),32+i*320);
-  const skBytes=new Uint8Array(32+32+32+MLDSAL*128+MLDSAK*128);
-  skBytes.set(rho);skBytes.set(rhop,32);skBytes.set(SHA3_256(pk),64);
-  for(let i=0;i<MLDSAL;i++){const e=new Uint8Array(128);const ss=dintt(s1[i]);for(let j=0;j<MLDSAN;j++){const v=ss[j]<0?ss[j]+MLDSAQ:ss[j];e[j>>1]|=(v&0xF)<<((j&1)*4);}skBytes.set(e,96+i*128);}
-  for(let i=0;i<MLDSAK;i++){const e=new Uint8Array(128);const ss=dintt(s2[i]);for(let j=0;j<MLDSAN;j++){const v=ss[j]<0?ss[j]+MLDSAQ:ss[j];e[j>>1]|=(v&0xF)<<((j&1)*4);}skBytes.set(e,96+MLDSAL*128+i*128);}
-  return{pk:hex(pk),sk:hex(skBytes)};
-}
-
-// ML-DSA sign — deterministic, message-bound
-async function mldsaSign(skH,msg){
-  const sk=fhex(skH);
-  const rho=sk.slice(0,32);const rhop=sk.slice(32,64);
-  const A=Array.from({length:MLDSAK},(_,i)=>Array.from({length:MLDSAL},(_,j)=>dexpand(rho,i,j)));
-  const s1=Array.from({length:MLDSAL},(_,i)=>{const e=sk.slice(96+i*128,96+(i+1)*128);const p=new Int32Array(MLDSAN);for(let j=0;j<MLDSAN;j++)p[j]=dmod(((e[j>>1]>>((j&1)*4))&0xF)-(MLDSA_ETA>2?4:2));return dntt(p);});
-  const s2=Array.from({length:MLDSAK},(_,i)=>{const e=sk.slice(96+MLDSAL*128+i*128,96+MLDSAL*128+(i+1)*128);const p=new Int32Array(MLDSAN);for(let j=0;j<MLDSAN;j++)p[j]=dmod(((e[j>>1]>>((j&1)*4))&0xF)-(MLDSA_ETA>2?4:2));return dntt(p);});
-  const mu=SHAKE256(cat(sk.slice(64,96),typeof msg==='string'?te(msg):msg),64);
-  let kappa=0;
-  while(kappa<256){
-    const y=Array.from({length:MLDSAL},(_,i)=>{const r=SHAKE256(cat(rhop,new Uint8Array([kappa>>8,kappa&0xFF,i])),MLDSAN*4);const p=new Int32Array(MLDSAN);for(let j=0;j<MLDSAN;j++){const v=(r[j*4]|(r[j*4+1]<<8)|(r[j*4+2]<<16))%(2*MLDSA_GAMMA1);p[j]=dmod(v-MLDSA_GAMMA1);}return dntt(p);});
-    const Ay=Array.from({length:MLDSAK},(_,i)=>{let r=new Int32Array(MLDSAN);for(let j=0;j<MLDSAL;j++)r=dadd(r,dmul(A[i][j],y[j]));return dintt(r);});
-    const w1=Ay.map(p=>p.map(v=>dhighlow(v)[0]));
-    const w1b=new Uint8Array(MLDSAK*MLDSAN/2);
-    for(let i=0;i<MLDSAK;i++)for(let j=0;j<MLDSAN;j++)w1b[(i*MLDSAN+j)>>1]|=(w1[i][j]&0xF)<<((j&1)*4);
-    const cHash=SHAKE256(cat(mu,w1b),32);
-    const cPoly=new Int32Array(MLDSAN);let pos=0;
-    for(let i=MLDSAN-1;i>=MLDSAN-MLDSA_TAU;i--){let j=cHash[pos++]%(i+1);cPoly[i]=cPoly[j];cPoly[j]=1;}
-    const cNTT=dntt(cPoly);
-    const z=y.map((yi,i)=>dintt(dadd(yi,dmul(cNTT,s1[i]))));
-    const r0=Ay.map((Ayi,i)=>{const cs2=dintt(dmul(cNTT,s2[i]));return dsub(Ayi,cs2).map(v=>dhighlow(v)[1]);});
-    if(z.some(zi=>dinf(zi)>=MLDSA_GAMMA1-MLDSA_BETA)||r0.some(ri=>dinf(ri)>=MLDSA_GAMMA2-MLDSA_BETA)){kappa++;continue;}
-    const sig=new Uint8Array(32+MLDSAL*MLDSAN*4/8+MLDSAK);
-    sig.set(cHash);
-    let off=32;for(const zi of z){for(let j=0;j<MLDSAN;j+=2){const v1=zi[j]+MLDSA_GAMMA1;const v2=zi[j+1]+MLDSA_GAMMA1;sig[off++]=(v1>>9)&0xFF;sig[off++]=(v1>>1)&0xFF;sig[off++]=((v1&1)<<7)|((v2>>11)&0x7F);sig[off++]=(v2>>3)&0xFF;sig[off++]=(v2&7)<<5;}}
-    return hex(sig);
-  }
-  throw new Error('ML-DSA sign failed');
-}
-
-// ML-DSA verify
-async function mldsaVerify(pkH,msg,sigH){
-  try{
-    const pk=fhex(pkH);const sig=fhex(sigH);
-    const rho=pk.slice(0,32);
-    const A=Array.from({length:MLDSAK},(_,i)=>Array.from({length:MLDSAL},(_,j)=>dexpand(rho,i,j)));
-    const t=Array.from({length:MLDSAK},(_,i)=>dntt(ddec10(pk.slice(32+i*320,32+(i+1)*320))));
-    const cHash=sig.slice(0,32);
-    const cPoly=new Int32Array(MLDSAN);let pos=0;
-    for(let i=MLDSAN-1;i>=MLDSAN-MLDSA_TAU;i--){let j=cHash[pos++]%(i+1);cPoly[i]=cPoly[j];cPoly[j]=1;}
-    const cNTT=dntt(cPoly);
-    const z=Array.from({length:MLDSAL},(_,i)=>{const p=new Int32Array(MLDSAN);let off=32+i*MLDSAN*4/8;for(let j=0;j<MLDSAN;j+=2){const b0=sig[off],b1=sig[off+1],b2=sig[off+2],b3=sig[off+3],b4=sig[off+4];p[j]=(b0<<9)|(b1<<1)|(b2>>7)-MLDSA_GAMMA1;p[j+1]=((b2&0x7F)<<11)|(b3<<3)|(b4>>5)-MLDSA_GAMMA1;off+=5;}return dntt(p);});
-    if(z.some(zi=>dinf(zi)>=MLDSA_GAMMA1-MLDSA_BETA))return false;
-    const w=Array.from({length:MLDSAK},(_,i)=>{let r=new Int32Array(MLDSAN);for(let j=0;j<MLDSAL;j++)r=dadd(r,dmul(A[i][j],z[j]));return dintt(dsub(r,dmul(cNTT,t[i])));});
-    const mu=SHAKE256(cat(SHA3_256(pk),typeof msg==='string'?te(msg):msg),64);
-    const w1b=new Uint8Array(MLDSAK*MLDSAN/2);
-    for(let i=0;i<MLDSAK;i++){const wi=w[i].map(v=>dhighlow(v)[0]);for(let j=0;j<MLDSAN;j++)w1b[(i*MLDSAN+j)>>1]|=(wi[j]&0xF)<<((j&1)*4);}
-    const cCheck=SHAKE256(cat(mu,w1b),32);
-    return cCheck.every((v,i)=>v===cHash[i]);
-  }catch{return false;}
-}
-
-// ══════════════════════════════════════════════════════
-//  Key Transparency — Audit Log
-//  Every key change is recorded with:
-//    - timestamp, old key hash, new key hash
-//    - ML-DSA signature over the log entry
-//  If a peer's key changes unexpectedly → WARNING shown
-//  User can audit full key history in settings
-// ══════════════════════════════════════════════════════
-
-const KT_LOG_KEY='rl6_kt_log';
-let _ktLog=[];
-
-function ktLoad(){
-  try{_ktLog=JSON.parse(localStorage.getItem(KT_LOG_KEY))||[];}catch{_ktLog=[];}
-}
-
-function ktSave(){
-  try{localStorage.setItem(KT_LOG_KEY,JSON.stringify(_ktLog.slice(-200)));}catch{}
-}
-
-// Record a key event — signed with our ML-DSA key
-async function ktRecord(peerPub,oldKyberPk,newKyberPk,event='key_seen'){
-  if(!MLDSAkeys)return;
-  const entry={
-    ts:Date.now(),
-    peer:peerPub,
-    event,
-    oldHash:oldKyberPk?hex(SHA3_256(te(oldKyberPk))).slice(0,16):null,
-    newHash:hex(SHA3_256(te(newKyberPk))).slice(0,16),
-    n:_ktLog.length
-  };
-  // Sign the entry with ML-DSA
-  try{
-    const msg=JSON.stringify({ts:entry.ts,peer:entry.peer,newHash:entry.newHash,n:entry.n});
-    entry.sig=await mldsaSign(MLDSAkeys.sk,msg);
-  }catch{}
-  _ktLog.push(entry);
-  ktSave();
-}
-
-// Check if a peer's key has changed — returns 'new'|'changed'|'same'
-function ktCheck(peerPub,kyberPk){
-  const entries=_ktLog.filter(e=>e.peer===peerPub);
-  if(!entries.length)return 'new';
-  const last=entries[entries.length-1];
-  const newHash=hex(SHA3_256(te(kyberPk))).slice(0,16);
-  return last.newHash===newHash?'same':'changed';
-}
-
-function ktRender(){
-  const el=document.getElementById('ktLog');if(!el)return;
-  const entries=[..._ktLog].reverse().slice(0,20);
-  if(!entries.length){el.innerHTML='<div style="font-size:10px;color:var(--dim)">Hələ qeyd yoxdur.</div>';return;}
-  el.innerHTML=entries.map(e=>{
-    const p=PEERS[e.peer];const nm=p?.name||e.peer.slice(0,10);
-    const t=new Date(e.ts).toLocaleString('az',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
-    const cls=e.event==='key_changed'?'kt-warn':e.event==='key_first'?'kt-new':'kt-ok';
-    const icon=e.event==='key_changed'?'⚠':e.event==='key_first'?'🆕':'✓';
-    return`<div class="kt-entry ${cls}">
-      <span style="color:var(--mut)">${t}</span> · <span style="color:var(--acc2)">${nm}</span><br>
-      ${icon} ${e.event==='key_changed'?'<b style="color:var(--red)">AÇAR DƏYİŞDİ!</b>':e.event==='key_first'?'İlk görüş':'Açar təsdiqləndi'}
-      · <span style="color:var(--dim)">${e.newHash}</span>
-    </div>`;
-  }).join('');
-}
-
-// ══════════════════════════════════════════════════════
-//  Emergency Wipe — 3-second hold to trigger
-//  Wipes: all localStorage, sessionStorage, DR states,
-//         PIN, keys, messages, KT log, peers
-//  After wipe: reloads to blank state
-// ══════════════════════════════════════════════════════
-
-let _wipeHoldTimer=null;
-let _wipeInterval=null;
-const WIPE_HOLD_MS=3000;
-
-function showWipeModal(){document.getElementById('wipeModal').classList.add('show');}
-function hideWipeModal(){
-  document.getElementById('wipeModal').classList.remove('show');
-  cancelWipeHold();
-}
-
-function startWipeHold(e){
-  if(e)e.preventDefault();
-  const bar=document.getElementById('wipeBar');
-  const hint=document.getElementById('wipeHint');
-  const prog=document.getElementById('wipeProgress');
-  bar.style.width='0';prog.classList.add('on');
-  hint.textContent='Buraxmayın...';
-  let elapsed=0;
-  _wipeInterval=setInterval(()=>{
-    elapsed+=50;
-    bar.style.width=(elapsed/WIPE_HOLD_MS*100)+'%';
-  },50);
-  _wipeHoldTimer=setTimeout(()=>{
-    clearInterval(_wipeInterval);
-    executeWipe();
-  },WIPE_HOLD_MS);
-}
-
-function cancelWipeHold(){
-  clearTimeout(_wipeHoldTimer);clearInterval(_wipeInterval);
-  _wipeHoldTimer=null;_wipeInterval=null;
-  const bar=document.getElementById('wipeBar');
-  const hint=document.getElementById('wipeHint');
-  const prog=document.getElementById('wipeProgress');
-  if(bar)bar.style.width='0';
-  if(prog)prog.classList.remove('on');
-  if(hint)hint.textContent='Düyməni 3 saniyə basıb saxlayın';
-}
-
-async function executeWipe(){
-  // Update UI
-  document.getElementById('wipeHint').textContent='🔥 Silinir...';
-  document.getElementById('wipeBtn').disabled=true;
-
-  // 1. Overwrite sensitive keys with random data before deleting
-  const sensitiveKeys=[
-    'rl6_sk_enc','rl6_pin_salt','rl6_pin_ver',
-    'rl5_nkey','rl5_kkey','rl5_nkey_pub','rl5_kkey_pub',
-    'rl6_mldsa_key'
-  ];
-  for(const k of sensitiveKeys){
-    try{localStorage.setItem(k,hex(rnd(64)));}catch{}
-  }
-
-  // 2. Overwrite DR ratchet states
-  const allKeys=Object.keys(localStorage);
-  for(const k of allKeys){
-    if(k.startsWith('rl6_dr_')||k.startsWith('rl6_ttl_')){
-      try{localStorage.setItem(k,hex(rnd(32)));}catch{}
-    }
-  }
-
-  // Small delay so overwrite completes
-  await new Promise(r=>setTimeout(r,100));
-
-  // 3. Clear everything including IDB
-  try{indexedDB.deleteDatabase('relay_media');}catch{}
-  sessionStorage.clear();
-  localStorage.clear();
-
-  // 4. Clear in-memory keys
-  if(NK){NK.priv=null;NK=null;}
-  if(KKkeys){KKkeys.sk=null;KKkeys=null;}
-  if(MLDSAkeys){MLDSAkeys.sk=null;MLDSAkeys=null;}
-
-  // 5. Reload
-  setTimeout(()=>location.reload(),300);
-}
-
-// ══════════════════════════════════════════════════════
-//  Replay Attack Protection
-//  Two-layer defence:
-//  1. Timestamp window: events older than 5 min are rejected
-//  2. Nonce cache: seen event IDs stored — duplicates rejected
-//     Cache: max 2000 entries, entries expire after 10 min
-//  A replayed event fails BOTH checks simultaneously.
-// ══════════════════════════════════════════════════════
-
-const REPLAY_WINDOW_MS = 5 * 60 * 1000;   // 5 minute timestamp window
-const REPLAY_CACHE_TTL = 10 * 60 * 1000;  // nonce expires after 10 min
-const REPLAY_CACHE_MAX = 2000;             // max nonce cache size
-
-// Map: eventId → timestamp when we first saw it
-const _seenIds = new Map();
-
-// Periodic cleanup — remove expired nonces from cache
-function _cleanReplayCache(){
-  const cutoff=Date.now()-REPLAY_CACHE_TTL;
-  for(const[id,ts] of _seenIds){
-    if(ts<cutoff)_seenIds.delete(id);
-  }
-}
-setInterval(_cleanReplayCache, 60000); // clean every minute
-
-// Main replay check — returns true if event should be rejected
-function isReplay(ev){
-  const now=Date.now();
-
-  // 1. Timestamp check — Nostr created_at is in seconds
-  const evTs=ev.created_at*1000;
-  if(Math.abs(now-evTs)>REPLAY_WINDOW_MS){
-    console.warn('Replay: timestamp out of window',ev.id?.slice(0,8),
-      Math.round((now-evTs)/1000)+'s drift');
-    return true;
-  }
-
-  // 2. Nonce (event ID) check
-  if(!ev.id)return true; // no ID = reject
-  if(_seenIds.has(ev.id)){
-    console.warn('Replay: duplicate event ID',ev.id.slice(0,8));
-    return true;
-  }
-
-  // Not a replay — register this ID
-  // If cache is full, remove oldest entry first
-  if(_seenIds.size>=REPLAY_CACHE_MAX){
-    const firstKey=_seenIds.keys().next().value;
-    _seenIds.delete(firstKey);
-  }
-  _seenIds.set(ev.id,now);
-  return false;
-}
-
-// ══════════════════════════════════════════════════════
-//  Deniable Authentication
-//
-//  Problem: Schnorr signatures (BIP340) are NON-repudiable.
-//  A third party shown (message + sig + pubkey) can verify
-//  "Alice definitely wrote this." This is a legal/coercive risk.
-//
-//  Solution: HMAC-based Message Authentication (Signal style)
-//  - Auth tag = HMAC-SHA256(deniableKey, msgId + content_hash)
-//  - deniableKey derived from DR epoch shared secret
-//  - BOTH sender and receiver can compute this HMAC
-//  - Therefore: neither can PROVE to a third party who wrote it
-//  - Receiver knows it's authentic (only their peer shares deniableKey)
-//  - But third party cannot distinguish sender from receiver
-//
-//  Nostr transport still uses Schnorr (protocol requirement) but
-//  with EPHEMERAL keys (Sealed Sender) — not the user's real key.
-//  The deniability tag protects the MESSAGE CONTENT attribution.
-// ══════════════════════════════════════════════════════
-
-// HMAC-SHA256 using WebCrypto
-async function hmac256(keyBytes, data){
-  const k=await crypto.subtle.importKey(
-    'raw', keyBytes, {name:'HMAC',hash:'SHA-256'}, false, ['sign']
-  );
-  const inp=typeof data==='string'?te(data):data;
-  return new Uint8Array(await crypto.subtle.sign('HMAC',k,inp));
-}
-
-// Derive deniable auth key from DR epoch shared secret
-// Both sides have same epochKey → same deniableKey → can both forge HMAC
-async function getDeniableKey(peerPub){
-  const st=drLoad(peerPub);
-  if(!st?.rootKey)return null;
-  // Derive from root key so it evolves with every ratchet step
-  return hkdf1(fhex(st.rootKey),new Uint8Array(32),'RELAY_DENIABLE_AUTH');
-}
-
-// Add deniability tag to outgoing message object
-async function stampDeniable(obj,peerPub){
-  try{
-    const dk=await getDeniableKey(peerPub);
-    if(!dk)return obj;
-    // Tag = HMAC(deniableKey, msgId + ts)
-    const input=te(obj.id+(obj.ts||Date.now()));
-    const tag=await hmac256(dk,input);
-    obj._da=hex(tag).slice(0,32); // 16-byte tag (128-bit, sufficient for auth)
-  }catch{}
-  return obj;
-}
-
-// Verify deniability tag on incoming message
-// Returns true if valid, false if tampered/missing
-// A missing tag is acceptable (backwards compat) — just unverified
-async function verifyDeniable(obj,peerPub){
-  if(!obj._da)return null; // no tag — not an error, just unverified
-  try{
-    const dk=await getDeniableKey(peerPub);
-    if(!dk)return null;
-    const input=te(obj.id+(obj.ts||0));
-    const expected=await hmac256(dk,input);
-    const expectedHex=hex(expected).slice(0,32);
-    // Constant-time compare to prevent timing attacks
-    if(expectedHex.length!==obj._da.length)return false;
-    let diff=0;
-    for(let i=0;i<expectedHex.length;i++)
-      diff|=expectedHex.charCodeAt(i)^obj._da.charCodeAt(i);
-    return diff===0;
-  }catch{return null;}
-}
-
-// ══════════════════════════════════════════════════════
-//  ML-KEM-768 (FIPS 203)
-// ══════════════════════════════════════════════════════
-const KQ=3329,KN=256,KK=3,ET1=2,ET2=2,DU=10,DV=4;
-const km=a=>{a=a%KQ;return a<0?a+KQ:a;};
-const kpw=(b,e)=>{let r=1;b=km(b);while(e>0){if(e&1)r=km(r*b);b=km(b*b);e>>=1;}return r;};
-const kbrv=x=>{let r=0;for(let i=0;i<7;i++){r=(r<<1)|(x&1);x>>=1;}return r;};
-const KZ=new Int32Array(128);for(let i=0;i<128;i++)KZ[i]=kpw(17,kbrv(i));
-const knt=f=>{const a=Int32Array.from(f);let i=1;for(let l=128;l>=2;l>>=1)for(let s=0;s<KN;s+=2*l){const z=KZ[i++];for(let j=s;j<s+l;j++){const t=km(z*a[j+l]);a[j+l]=km(a[j]-t);a[j]=km(a[j]+t);}}return a;};
-const kit=f=>{const a=Int32Array.from(f);let i=127;for(let l=2;l<=128;l<<=1)for(let s=0;s<KN;s+=2*l){const z=KZ[i--];for(let j=s;j<s+l;j++){const t=a[j];a[j]=km(t+a[j+l]);a[j+l]=km(z*km(a[j+l]-t));}}const iv=kpw(128,KQ-2);for(let j=0;j<KN;j++)a[j]=km(a[j]*iv);return a;};
-const kbm=(a,b)=>{const c=new Int32Array(KN);for(let i=0;i<128;i++){const g=kpw(17,2*kbrv(i)+1);c[2*i]=km(km(a[2*i]*b[2*i])+km(km(a[2*i+1]*b[2*i+1])*g));c[2*i+1]=km(km(a[2*i]*b[2*i+1])+km(a[2*i+1]*b[2*i]));}return c;};
-const kpa=(a,b)=>{const c=new Int32Array(KN);for(let i=0;i<KN;i++)c[i]=km(a[i]+b[i]);return c;};
-const kps=(a,b)=>{const c=new Int32Array(KN);for(let i=0;i<KN;i++)c[i]=km(a[i]-b[i]);return c;};
-const kcp=(p,d)=>{const c=new Int32Array(KN);for(let i=0;i<KN;i++)c[i]=Math.round(p[i]*(1<<d)/KQ)&((1<<d)-1);return c;};
-const kdp=(p,d)=>{const c=new Int32Array(KN);for(let i=0;i<KN;i++)c[i]=Math.round(p[i]*KQ/(1<<d));return c;};
-function kenc(p,d){const o=new Uint8Array(KN*d/8);for(let i=0;i<KN;i++){const v=p[i]&((1<<d)-1);for(let b=0;b<d;b++){const pos=i*d+b;if(v&(1<<b))o[pos>>3]|=1<<(pos&7);}}return o;}
-function kdec(bytes,d){const p=new Int32Array(KN);for(let i=0;i<KN;i++){let v=0;for(let b=0;b<d;b++){const pos=i*d+b;v|=((bytes[pos>>3]>>(pos&7))&1)<<b;}p[i]=v;}return p;}
-const kH=d=>SHA3_256(d);
-const kG=d=>{const h=SHA3_512(d);return[h.slice(0,32),h.slice(32)];};
-const kPRF=(s,b,l)=>SHAKE256(cat(s,new Uint8Array([b])),l);
-const kXOF=(rho,i,j,l)=>SHAKE128(cat(rho,new Uint8Array([i,j])),l);
-function kSU(b){const p=new Int32Array(KN);let j=0,pos=0;while(j<KN&&pos+2<b.length){const d1=b[pos]|((b[pos+1]&0xF)<<8);const d2=(b[pos+1]>>4)|(b[pos+2]<<4);pos+=3;if(d1<KQ)p[j++]=d1;if(j<KN&&d2<KQ)p[j++]=d2;}return p;}
-function kCBD(eta,b){const p=new Int32Array(KN);for(let i=0;i<KN;i++){let a=0,bb=0;for(let j=0;j<eta;j++){const idx=2*eta*i+j;a+=(b[idx>>3]>>(idx&7))&1;}for(let j=0;j<eta;j++){const idx=2*eta*i+eta+j;bb+=(b[idx>>3]>>(idx&7))&1;}p[i]=km(a-bb);}return p;}
-function kGA(rho,tr){const A=[];for(let i=0;i<KK;i++){A[i]=[];for(let j=0;j<KK;j++){const bi=tr?j:i,bj=tr?i:j;A[i][j]=kSU(kXOF(rho,bi,bj,672));}}return A;}
-function kemKG(){const d=rnd(32),z=rnd(32);const[rho,sigma]=kG(d);const A=kGA(rho,false);const sh=[],eh=[];for(let i=0;i<KK;i++) sh[i]=knt(kCBD(ET1,kPRF(sigma,i,64*ET1)));for(let i=0;i<KK;i++) eh[i]=knt(kCBD(ET1,kPRF(sigma,KK+i,64*ET1)));const th=[];for(let i=0;i<KK;i++){let s=new Int32Array(KN);for(let j=0;j<KK;j++)s=kpa(s,kbm(A[i][j],sh[j]));th[i]=kpa(s,eh[i]);}const pk=new Uint8Array(KK*384+32);for(let i=0;i<KK;i++) pk.set(kenc(th[i],12),i*384);pk.set(rho,KK*384);const hpk=kH(pk);const sk=new Uint8Array(KK*384+pk.length+32+32);for(let i=0;i<KK;i++) sk.set(kenc(sh[i],12),i*384);sk.set(pk,KK*384);sk.set(hpk,KK*384+pk.length);sk.set(z,KK*384+pk.length+32);return{pk:hex(pk),sk:hex(sk)};}
-function kemE(pkH){const pk=fhex(pkH),m=rnd(32),hpk=kH(pk);const[Kss,r]=kG(cat(m,hpk));const th=[];for(let i=0;i<KK;i++) th[i]=kdec(pk.slice(i*384,(i+1)*384),12);const rho=pk.slice(KK*384,KK*384+32);const A=kGA(rho,true);const rh=[],e1=[];for(let i=0;i<KK;i++) rh[i]=knt(kCBD(ET1,kPRF(r,i,64*ET1)));for(let i=0;i<KK;i++) e1[i]=kCBD(ET2,kPRF(r,KK+i,64*ET2));const e2=kCBD(ET2,kPRF(r,2*KK,64*ET2));const u=[];for(let i=0;i<KK;i++){let s=new Int32Array(KN);for(let j=0;j<KK;j++)s=kpa(s,kbm(A[i][j],rh[j]));u[i]=kpa(kit(s),e1[i]);}let vs=new Int32Array(KN);for(let i=0;i<KK;i++) vs=kpa(vs,kbm(th[i],rh[i]));const mu=new Int32Array(KN);for(let i=0;i<KN;i++) mu[i]=((m[i>>3]>>(i&7))&1)*Math.round(KQ/2);const v=kpa(kpa(kit(vs),e2),mu);const ct=new Uint8Array(KK*KN*DU/8+KN*DV/8);for(let i=0;i<KK;i++) ct.set(kenc(kcp(u[i],DU),DU),i*KN*DU/8);ct.set(kenc(kcp(v,DV),DV),KK*KN*DU/8);return{ct:hex(ct),K:Kss};}
-function kemD(ctH,skH){const ct=fhex(ctH),sk=fhex(skH);const sh=[];for(let i=0;i<KK;i++) sh[i]=kdec(sk.slice(i*384,(i+1)*384),12);const u=[];for(let i=0;i<KK;i++) u[i]=kdp(kdec(ct.slice(i*KN*DU/8,(i+1)*KN*DU/8),DU),DU);const v=kdp(kdec(ct.slice(KK*KN*DU/8,KK*KN*DU/8+KN*DV/8),DV),DV);let inner=new Int32Array(KN);for(let i=0;i<KK;i++) inner=kpa(inner,kbm(sh[i],knt(u[i])));const w=kps(v,kit(inner));const mp=new Uint8Array(32);for(let i=0;i<KN;i++){if(Math.round(w[i]*2/KQ)&1) mp[i>>3]|=1<<(i&7);}const pk_=sk.slice(KK*384,KK*384+KK*384+32);const[Kss]=kG(cat(mp,kH(pk_)));return Kss;}
-
-// AES-256-GCM helpers
-async function aesEnc(k,data){const key=await crypto.subtle.importKey('raw',k,{name:'AES-GCM'},false,['encrypt']);const iv=rnd(12);const inp=typeof data==='string'?te(data):(data instanceof Uint8Array?data:new Uint8Array(data));const ct=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,inp);return{iv:hex(iv),ct:hex(new Uint8Array(ct))};}
-async function aesDec(k,ivH,ctH){const key=await crypto.subtle.importKey('raw',k,{name:'AES-GCM'},false,['decrypt']);return new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:fhex(ivH)},key,fhex(ctH)));}
-
-// ══════════════════════════════════════════════════════
-//  Double Ratchet — ML-KEM-768 variant
-//  Each message: new ephemeral KEM → new message key → old deleted
-//  Root key updated via HKDF every ratchet step
-//  Forward secrecy: compromise of SK does NOT expose past messages
-// ══════════════════════════════════════════════════════
-
-// HKDF-SHA256: derive two 32-byte keys from input key material
-async function hkdf2(ikm,salt,info1,info2){
-  const base=await crypto.subtle.importKey('raw',ikm,{name:'HKDF'},false,['deriveBits']);
-  const bits=await crypto.subtle.deriveBits({name:'HKDF',hash:'SHA-256',salt,info:te(info1+info2)},base,512);
-  return[new Uint8Array(bits,0,32),new Uint8Array(bits,32,32)];
-}
-
-async function hkdf1(ikm,salt,info){
-  const base=await crypto.subtle.importKey('raw',ikm,{name:'HKDF'},false,['deriveBits']);
-  const bits=await crypto.subtle.deriveBits({name:'HKDF',hash:'SHA-256',salt,info:te(info)},base,256);
-  return new Uint8Array(bits);
-}
-
-// Ratchet state per peer — stored in localStorage
-// State: {rootKey, sendChainKey, recvChainKey, sendN, recvN, peerKyberPk, myEphPk, myEphSk}
-const DR={};
-
-function drKey(peerPub){return'rl6_dr_'+peerPub;}
-
-function drLoad(peerPub){
-  try{const d=JSON.parse(localStorage.getItem(drKey(peerPub)));if(d)return d;}catch{}
-  return null;
-}
-
-function drSave(peerPub,st){
-  try{localStorage.setItem(drKey(peerPub),JSON.stringify(st));}catch{}
-}
-
-// Initialize ratchet for a peer — called when we first know their kyberPk
-// Returns the initial state
-async function drInit(peerPub,peerKyberPk){
-  // Generate our ephemeral KEM keypair
-  const eph=kemKG();
-  // Perform initial KEM encapsulation against peer's long-term key
-  const{ct:initCt,K:initK}=kemE(peerKyberPk);
-  // Derive initial root key and send chain key
-  const salt=new Uint8Array(32);
-  const[rootKey,sendChainKey]=await hkdf2(fhex(initK.map?initK:hex(initK)),salt,'RELAY_DR_ROOT','_INIT');
-  const st={
-    rootKey:hex(rootKey),
-    sendChainKey:hex(sendChainKey),
-    recvChainKey:null,
-    sendN:0,recvN:0,
-    peerKyberPk,
-    myEphPk:eph.pk,myEphSk:eph.sk,
-    initCt, // sent to peer in first message header so they can derive same root
-    initialized:true
-  };
-  drSave(peerPub,st);
-  return st;
-}
-
-// Receiver initializes ratchet from the sender's initCt header
-async function drInitRecv(peerPub,peerKyberPk,initCt){
-  // Decapsulate with our long-term SK to get same initK
-  const initK=kemD(initCt,KKkeys.sk);
-  const salt=new Uint8Array(32);
-  const[rootKey,recvChainKey]=await hkdf2(initK,salt,'RELAY_DR_ROOT','_INIT');
-  const eph=kemKG();
-  const st={
-    rootKey:hex(rootKey),
-    sendChainKey:null,
-    recvChainKey:hex(recvChainKey),
-    sendN:0,recvN:0,
-    peerKyberPk,
-    myEphPk:eph.pk,myEphSk:eph.sk,
-    initialized:true
-  };
-  drSave(peerPub,st);
-  return st;
-}
-
-// Derive one message key from chain key, advance chain key
-async function drAdvanceChain(chainKeyHex){
-  const ck=fhex(chainKeyHex);
-  const mk=await hkdf1(ck,new Uint8Array(32),'RELAY_DR_MSG_KEY');
-  const nextCk=await hkdf1(ck,new Uint8Array(32),'RELAY_DR_CHAIN_ADV');
-  return{mk,nextCk};
-}
-
-// Encrypt a message with Double Ratchet
-// Returns {header, ciphertext} — header contains ephemeral KEM ct for ratchet step
-async function drEncrypt(peerPub,plaintext){
-  let st=drLoad(peerPub);
-  const peer=PEERS[peerPub];
-  if(!st||!st.initialized){
-    st=await drInit(peerPub,peer.kyberPk);
-  }
-  if(!st.sendChainKey){
-    const targetPk=st.peerEphPk||peer.kyberPk;
-    const{ct:ratchetCt,K:ratchetK}=kemE(targetPk);
-    const[newRoot,newSendChain]=await hkdf2(fhex(st.rootKey),ratchetK,'RELAY_DR_ROOT','_RATCHET');
-    st.rootKey=hex(newRoot);
-    st.sendChainKey=hex(newSendChain);
-    st.myRatchetCt=ratchetCt;
-    st.ratchetN=(st.ratchetN||0)+1;
-  }
-  const{mk,nextCk}=await drAdvanceChain(st.sendChainKey);
-  st.sendChainKey=hex(nextCk);
-  const n=st.sendN++;
-  const aesKey=await crypto.subtle.importKey('raw',mk,{name:'AES-GCM'},false,['encrypt']);
-  const iv=rnd(12);
-  // Accept both string and Uint8Array plaintext
-  const inp=plaintext instanceof Uint8Array?plaintext:te(typeof plaintext==='string'?plaintext:JSON.stringify(plaintext));
-  const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},aesKey,inp));
-  const result={v:4,n,iv:hex(iv),ct:hex(ct)};
-  if(st.initCt){result.initCt=st.initCt;st.initCt=null;} // only send once
-  if(st.myRatchetCt){result.ratchetCt=st.myRatchetCt;st.myRatchetCt=null;}
-  result.ephPk=st.myEphPk;
-  drSave(peerPub,st);
-  return JSON.stringify(result);
-}
-
-// Decrypt a message with Double Ratchet
-async function drDecrypt(peerPub,payload){
-  const{v,n,initCt,ratchetCt,ephPk,iv,ct}=JSON.parse(payload);
-  if(v!==4)throw new Error('DR version mismatch');
-  let st=drLoad(peerPub);
-  const peer=PEERS[peerPub];
-  // If we haven't initialized yet, do it from sender's initCt
-  if(!st||!st.initialized){
-    if(!initCt)throw new Error('DR: no initCt for first message');
-    st=await drInitRecv(peerPub,peer.kyberPk,initCt);
-  }
-  // Store peer's ephemeral pubkey for our next ratchet step
-  if(ephPk)st.peerEphPk=ephPk;
-  // If sender did a ratchet step, we must advance our recv chain
-  if(ratchetCt){
-    // Decapsulate ratchet ciphertext with our ephemeral SK
-    const ratchetK=kemD(ratchetCt,st.myEphSk);
-    const[newRoot,newRecvChain]=await hkdf2(fhex(st.rootKey),ratchetK,'RELAY_DR_ROOT','_RATCHET');
-    st.rootKey=hex(newRoot);
-    st.recvChainKey=hex(newRecvChain);
-    // Generate new ephemeral keypair for our next send ratchet
-    const newEph=kemKG();
-    st.myEphPk=newEph.pk;st.myEphSk=newEph.sk;
-    st.myRatchetCt=null; // will be set when we send
-    st.sendChainKey=null; // force ratchet on next send
-  }
-  if(!st.recvChainKey)throw new Error('DR: no recv chain');
-  // Advance recv chain → message key
-  const{mk,nextCk}=await drAdvanceChain(st.recvChainKey);
-  st.recvChainKey=hex(nextCk);
-  st.recvN++;
-  // Decrypt
-  const aesKey=await crypto.subtle.importKey('raw',mk,{name:'AES-GCM'},false,['decrypt']);
-  const plain=new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:fhex(iv)},aesKey,fhex(ct)));
-  drSave(peerPub,st);
-  return plain; // return raw bytes — caller handles unpadding
-}
-
-// ── Nostr transport: DR for content, outer KEM for relay delivery ──
-// Outer layer: standard ML-KEM (so relay can route to correct recipient)
-// Inner layer: Double Ratchet (forward secrecy per message)
-async function pqEncStr(pkH,str,peerPub){
-  // If peerPub provided, use DR inner encryption
-  if(peerPub){
-    const drPayload=await drEncrypt(peerPub,str);
-    // Wrap in outer KEM so only recipient can open outer layer
-    const{ct,K}=kemE(pkH);
-    const{iv,ct:a}=await aesEnc(K,drPayload);
-    return JSON.stringify({v:4,kem:ct,iv,ct:a});
-  }
-  // Fallback: standard single-layer (for signaling, no DR needed)
-  const{ct,K}=kemE(pkH);const{iv,ct:a}=await aesEnc(K,str);
-  return JSON.stringify({v:3,kem:ct,iv,ct:a});
-}
-
-async function pqDecStr(skH,payload){
-  const parsed=JSON.parse(payload);
-  // Simple KEM decrypt — used for signaling (kind:25050)
-  const raw=await aesDec(kemD(parsed.kem,skH),parsed.iv,parsed.ct);
-  return td(raw);
-}
-// For binary data — WebCrypto HKDF ensures cross-platform (Android↔iOS) determinism
-async function _hkdfKey(raw){
-  const base=await crypto.subtle.importKey('raw',raw,{name:'HKDF'},false,['deriveKey']);
-  return crypto.subtle.deriveKey({name:'HKDF',hash:'SHA-256',salt:new Uint8Array(32),info:new Uint8Array(0)},base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']);
-}
-// MessageChannel yield — setTimeout(0)-dan 5x sürətli, UI-i azad edir
-function yieldUI(){return new Promise(r=>{const ch=new MessageChannel();ch.port1.onmessage=r;ch.port2.postMessage(0);});}
-
-async function pqEncBin(pkH,bytes){
-  await yieldUI(); // kemE ~40ms CPU — yield əvvəl
-  const{ct,K}=kemE(pkH);
-  const key=await _hkdfKey(K);
-  const iv=rnd(12);
-  const inp=bytes instanceof Uint8Array?bytes:new Uint8Array(bytes);
-  const enc=await crypto.subtle.encrypt({name:'AES-GCM',iv},key,inp);
-  return{kem:ct,iv:hex(iv),ct:hex(new Uint8Array(enc))};
-}
-async function pqDecBin(skH,kem,iv,ct){
-  await yieldUI(); // kemD ~40ms CPU — yield əvvəl
-  const K=kemD(kem,skH);
-  const key=await _hkdfKey(K);
-  return new Uint8Array(await crypto.subtle.decrypt({name:'AES-GCM',iv:fhex(iv)},key,fhex(ct)));
-}
-
-// ══════════════════════════════════════════════════════
-//  Audio — iOS + Android compatible
-// ══════════════════════════════════════════════════════
-const IS_IOS=/iPad|iPhone|iPod/.test(navigator.userAgent)&&!window.MSStream;
-function getBestMime(){
-  if(typeof MediaRecorder==='undefined')return 'audio/mp4';
-  const order=IS_IOS
-    ?['audio/mp4;codecs=mp4a.40.2','audio/mp4','audio/aac']
-    :['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus'];
-  return order.find(t=>MediaRecorder.isTypeSupported(t))||'audio/mp4';
-}
-const AUDIO_MIME=getBestMime();
-
-// Play audio bytes — tries multiple mimes for iOS↔Android compat
-function playBytes(bytes,mimeType){
-  const order=[mimeType,'audio/mp4','audio/webm;codecs=opus','audio/webm','audio/ogg;codecs=opus'].filter(Boolean);
-  let i=0;
-  const tryNext=()=>{
-    if(i>=order.length)return;
-    const m=order[i++];
-    const blob=new Blob([bytes],{type:m});
-    const url=URL.createObjectURL(blob);
-    const aud=new Audio();
-    aud.src=url;
-    aud.onended=()=>setTimeout(()=>URL.revokeObjectURL(url),500);
-    aud.onerror=()=>{URL.revokeObjectURL(url);tryNext();};
-    aud.play().catch(()=>tryNext());
-  };
-  tryNext();
-}
-
-// ══════════════════════════════════════════════════════
-//  CRDT (ops without raw bytes in localStorage)
-// ══════════════════════════════════════════════════════
-class CRDT{
-  constructor(id){this.id=id;this.lam=0;this.vc={[id]:0};this.ops=[];this.mc=0;}
-  add(type,payload,to){this.lam++;this.vc[this.id]=this.lam;const op={id:hex(rnd(16)),from:this.id,to,lam:this.lam,vc:{...this.vc},type,payload,ts:Date.now()};this.ops.push(op);this._save();return op;}
-  merge(op){if(this.ops.find(o=>o.id===op.id))return false;this.lam=Math.max(this.lam,op.lam)+1;Object.keys(op.vc||{}).forEach(k=>this.vc[k]=Math.max(this.vc[k]||0,op.vc[k]||0));this.ops.push(op);this.ops.sort((a,b)=>a.lam!==b.lam?a.lam-b.lam:a.from.localeCompare(b.from));this.mc++;this._save();return true;}
-  chat(a,b){return this.ops.filter(o=>(o.from===a&&o.to===b)||(o.from===b&&o.to===a));}
-  _save(){
-    try{
-      const ops=this.ops.map(o=>{
-        const s={...o,payload:{...o.payload}};
-        // _bytes-ı IDB-də saxla, CRDT-dən sil
-        if(s.payload._bytes){idbSave(o.id,s.payload._bytes,s.payload.mimeType);delete s.payload._bytes;}
-        delete s.payload._prog;
-        return s;
-      });
-      localStorage.setItem('rl5_crdt',JSON.stringify({lam:String(this.lam),vc:this.vc,ops,mc:this.mc}));
-    }catch{}
-  }
-  static load(id){const c=new CRDT(id);try{const d=JSON.parse(localStorage.getItem('rl5_crdt'));if(d){c.lam=Number(d.lam)||0;c.vc=d.vc||{[id]:0};c.ops=d.ops||[];c.mc=d.mc||0;}}catch{}return c;}
-}
-
-// ══════════════════════════════════════════════════════
-//  NOSTR — text messages + signaling only
-// ══════════════════════════════════════════════════════
-const RELAYS=['wss://relay.damus.io','wss://nos.lol','wss://relay.nostr.info'];
-const WS={};const CONN=new Set();
-
-function relConn(url){
-  setRp(url,'try');let ws;
-  try{ws=new WebSocket(url);}catch{setRp(url,'no');return;}
-  const t=setTimeout(()=>{if(ws.readyState!==1){ws.close();setRp(url,'no');}},9000);
-  ws.onopen=()=>{clearTimeout(t);WS[url]=ws;CONN.add(url);setRp(url,'ok');
-    ws.send(JSON.stringify(['REQ',hex(rnd(8)),{kinds:[4,25050],'#p':[NK.pub],limit:50}]));
-    iStat();if(OQ.length)setTimeout(flushOQ,300);};
-  ws.onmessage=async e=>{try{const m=JSON.parse(e.data);if(m[0]==='EVENT'&&m[2])await onEv(m[2]);}catch{}};
-  ws.onclose=()=>{CONN.delete(url);delete WS[url];setRp(url,'no');iStat();setTimeout(()=>relConn(url),7000);};
-  ws.onerror=()=>clearTimeout(t);
-}
-function resubAll(){Object.keys(WS).forEach(url=>{const ws=WS[url];if(ws&&ws.readyState===1)ws.send(JSON.stringify(['REQ',hex(rnd(8)),{kinds:[4,25050],'#p':[NK.pub],limit:50}]));});}
-
-// Send via Nostr — DR encrypted for messages, plain KEM for signaling
-async function nostrPub(toPub,kyberPk,obj,kind=4){
-  await yieldUI();
-  // kind:25050 siqnallaşmasında kyberPk əlavə et ki receiver tanısın
-  const payload=kind===25050?{...obj,kyberPk:KKkeys.pk}:obj;
-  const{ct,K}=kemE(kyberPk);
-  const{iv,ct:a}=await aesEnc(K,JSON.stringify(payload));
-  const enc=JSON.stringify({v:3,kem:ct,iv,ct:a});
-  const tags=[['p',toPub],['kyber',KKkeys.pk]];
-  const ev=await buildEv(kind,enc,tags,NK.priv,NK.pub);
-  let s=0;Object.values(WS).forEach(ws=>{if(ws.readyState===1){ws.send(JSON.stringify(['EVENT',ev]));s++;}});
-  return s;
-}
-
-// ══════════════════════════════════════════════════════
-//  Traffic Padding — metadata protection
-//  Relay sees constant stream of indistinguishable events.
-//  Real messages and dummies are identical in:
-//    - Nostr kind (4), tag structure, ciphertext size (block-padded)
-//  Relay cannot determine: who talks to whom, when, how often.
-// ══════════════════════════════════════════════════════
-const PAD_BLOCK=512;
-const PAD_MIN_MS=5000;
-const PAD_MAX_MS=14000;
-let _padTimer=null;
-
-function padPlain(str){
-  const b=te(str);
-  const target=Math.ceil((b.length+2)/PAD_BLOCK)*PAD_BLOCK;
-  const padLen=target-b.length-2;
-  const out=new Uint8Array(2+b.length+padLen);
-  new DataView(out.buffer).setUint16(0,b.length);
-  out.set(b,2);out.set(rnd(padLen),2+b.length);
-  return out;
-}
-function unpadPlain(bytes){
-  const realLen=new DataView(bytes.buffer,bytes.byteOffset,2).getUint16(0);
-  return td(bytes.slice(2,2+realLen));
-}
-
-async function pqEncPadded(pkH,str){
-  // Simple reliable: ML-KEM-768 + AES-256-GCM + padding
-  const padded=padPlain(typeof str==='string'?str:JSON.stringify(str));
-  const{ct,K}=kemE(pkH);
-  const{iv,ct:a}=await aesEnc(K,padded);
-  return JSON.stringify({v:4,kem:ct,iv,ct:a});
-}
-
-async function sendDummy(toPub){
-  const peer=PEERS[toPub];if(!peer?.kyberPk)return;
-  const dummy={id:hex(rnd(16)),type:'__pad__',from:NK.pub,to:toPub,lam:0,vc:{},payload:{},ts:Date.now()};
-  try{
-    const enc=await pqEncPadded(peer.kyberPk,JSON.stringify(dummy));
-    const tags=[['p',toPub],['kyber',KKkeys.pk]];
-    const ev=await buildEv(4,enc,tags,NK.priv,NK.pub);
-    Object.values(WS).forEach(ws=>{if(ws.readyState===1)ws.send(JSON.stringify(['EVENT',ev]));});
-  }catch{}
-}
-
-async function sendWithCover(realToPub,realKyberPk,obj){
-  const enc=await pqEncPadded(realKyberPk,JSON.stringify(obj),realToPub);
-  const tags=[['p',realToPub],['kyber',KKkeys.pk]];
-  const ev=await buildEv(4,enc,tags,NK.priv,NK.pub);
-  Object.values(WS).forEach(ws=>{if(ws.readyState===1)ws.send(JSON.stringify(['EVENT',ev]));});
-  const others=Object.keys(PEERS).filter(p=>p!==realToPub&&PEERS[p]?.kyberPk);
-  others.forEach((p,i)=>setTimeout(()=>sendDummy(p),50+Math.random()*250));
-}
-
-function startPadding(){
-  if(_padTimer)return;
-  const fire=async()=>{
-    const peers=Object.keys(PEERS).filter(p=>PEERS[p]?.kyberPk);
-    if(peers.length&&CONN.size>0){
-      const count=1+Math.floor(Math.random()*Math.min(2,peers.length));
-      const picked=peers.sort(()=>Math.random()-.5).slice(0,count);
-      for(const p of picked)await sendDummySealed(p);
-    }
-    _padTimer=setTimeout(fire,PAD_MIN_MS+Math.random()*(PAD_MAX_MS-PAD_MIN_MS));
-  };
-  _padTimer=setTimeout(fire,PAD_MIN_MS+Math.random()*(PAD_MAX_MS-PAD_MIN_MS));
-}
-function stopPadding(){clearTimeout(_padTimer);_padTimer=null;}
-
-// ══════════════════════════════════════════════════════
-//  Hybrid Onion Routing — mini-Tor over Nostr
-//
-//  When 2+ peers are online: wrap message in onion layers
-//    Origin → Node1 → Node2 → Destination
-//  Each node peels one layer — sees only prev/next hop
-//  Relay sees: random pubkeys, uniform ciphertext size
-//  Falls back to direct send if no online peers available
-//
-//  Online detection: peers send heartbeat ping every 30s
-//  We track last-seen timestamp per peer
-// ══════════════════════════════════════════════════════
-
-// Online peer tracking
-const _peerOnline={};  // peerPub → lastSeenMs
-const ONLINE_TTL=90000; // 90 seconds — if no ping, considered offline
-const HB_INTERVAL=30000; // heartbeat every 30s
-
-function markOnline(peerPub){_peerOnline[peerPub]=Date.now();}
-function isOnline(peerPub){return Date.now()-(_peerOnline[peerPub]||0)<ONLINE_TTL;}
-function getOnlinePeers(){return Object.keys(PEERS).filter(p=>PEERS[p]?.kyberPk&&isOnline(p)&&p!==NK.pub);}
-
-// Send heartbeat ping to all known peers so they know we're online
-async function sendHeartbeat(){
-  if(!NK||!KKkeys||CONN.size===0)return;
-  const peers=Object.keys(PEERS).filter(p=>PEERS[p]?.kyberPk);
-  for(const p of peers){
-    try{
-      const peer=PEERS[p];
-      const{ct,K}=kemE(peer.kyberPk);
-      const{iv,ct:a}=await aesEnc(K,JSON.stringify({type:'__hb__',from:NK.pub,ts:Date.now()}));
-      const enc=JSON.stringify({v:5,kem:ct,iv,ct:a});
-      const ephNK=genNKP();
-      const ev=await buildEv(4,enc,[['p',p]],ephNK.priv,ephNK.pub);
-      Object.values(WS).forEach(ws=>{if(ws.readyState===1)ws.send(JSON.stringify(['EVENT',ev]));});
-    }catch{}
-  }
-}
-
-let _hbTimer=null;
-function startHeartbeat(){
-  if(_hbTimer)return;
-  sendHeartbeat(); // immediate first ping
-  _hbTimer=setInterval(sendHeartbeat,HB_INTERVAL);
-}
-function stopHeartbeat(){clearInterval(_hbTimer);_hbTimer=null;}
-
-// ── Onion Encryption ──
-// Build onion: wrap payload in layers for each hop
-// Layer structure (innermost first, then wrapped):
-//   Layer N (final): {type:'onion_final', payload: <actual encrypted msg>}
-//   Layer N-1:       {type:'onion_relay', next: nodeN_pub, ct: <layer_N encrypted for nodeN>}
-//   Layer 1:         {type:'onion_relay', next: node2_pub, ct: <layer_2 encrypted for node2>}
-// Each layer encrypted with ML-KEM for that node's kyberPk
-
-async function buildOnion(finalPayload, route){
-  // route = [node1Pub, node2Pub, ..., destPub]
-  // Build from inside out
-  const dest=route[route.length-1];
-  const destPeer=PEERS[dest];
-
-  // Innermost layer — final destination gets actual message
-  const inner={type:'onion_final',payload:finalPayload,dest};
-  const{ct:ct0,K:K0}=kemE(destPeer.kyberPk);
-  const{iv:iv0,ct:a0}=await aesEnc(K0,JSON.stringify(inner));
-  let current=JSON.stringify({v:6,kem:ct0,iv:iv0,ct:a0});
-
-  // Wrap in relay layers from second-to-last back to first
-  for(let i=route.length-2;i>=0;i--){
-    const nodePub=route[i];
-    const nodePeer=PEERS[nodePub];
-    const layer={type:'onion_relay',next:route[i+1],ct:current};
-    const{ct:cti,K:Ki}=kemE(nodePeer.kyberPk);
-    const{iv:ivi,ct:ai}=await aesEnc(Ki,JSON.stringify(layer));
-    current=JSON.stringify({v:6,kem:cti,iv:ivi,ct:ai});
-  }
-  return current;
-}
-
-// Send via onion routing — 2 hops if possible, 1 hop fallback
-async function sendOnion(destPub,finalEncPayload){
-  const online=getOnlinePeers().filter(p=>p!==destPub);
-  let route;
-
-  if(online.length>=2){
-    // 2-hop: pick 2 random online peers as relays
-    const shuffled=online.sort(()=>Math.random()-.5);
-    route=[shuffled[0],shuffled[1],destPub];
-  } else if(online.length===1){
-    // 1-hop: single relay
-    route=[online[0],destPub];
-  } else {
-    // No online peers — fallback to direct
-    return false;
-  }
-
-  try{
-    const onion=await buildOnion(finalEncPayload,route);
-    // Send to first node — use ephemeral key (sealed)
-    const firstNode=route[0];
-    const firstPeer=PEERS[firstNode];
-    const ephNK=genNKP();
-    const tags=[['p',firstNode]];
-    const ev=await buildEv(4,onion,tags,ephNK.priv,ephNK.pub);
-    Object.values(WS).forEach(ws=>{if(ws.readyState===1)ws.send(JSON.stringify(['EVENT',ev]));});
-    return true;
-  }catch(e){
-    console.warn('Onion send failed',e);
-    return false;
-  }
-}
-
-// Handle onion relay — we received an onion_relay packet, forward it
-async function handleOnionRelay(layer){
-  const{next,ct}=layer;
-  if(!next||!ct)return;
-  const nextPeer=PEERS[next];
-  if(!nextPeer?.kyberPk)return;
-  // Forward the inner ciphertext to next hop — use ephemeral key
-  const ephNK=genNKP();
-  const tags=[['p',next]];
-  const ev=await buildEv(4,ct,tags,ephNK.priv,ephNK.pub);
-  Object.values(WS).forEach(ws=>{if(ws.readyState===1)ws.send(JSON.stringify(['EVENT',ev]));});
-}
-
-// ── Reliable message send ──
-// Simple, proven encryption: ML-KEM-768 + AES-256-GCM + padding
-// Sender identity inside encrypted payload (Sealed Sender)
-// Onion routing attempted if peers online, direct fallback otherwise
-async function sendHybrid(destPub,destKyberPk,obj){
-  // Stamp deniable auth tag
-  try{await stampDeniable(obj,destPub);}catch{}
-
-  // Build inner payload with sender identity
-  const innerObj={...obj,_sender:{nostr:NK.pub,kyber:KKkeys.pk}};
-  const plaintext=JSON.stringify(innerObj);
-
-  // Encrypt with ML-KEM + AES
-  await yieldUI();
-  const{ct,K}=kemE(destKyberPk);
-  const padded=padPlain(plaintext);
-  const{iv,ct:a}=await aesEnc(K,padded);
-  const enc=JSON.stringify({v:4,kem:ct,iv,ct:a});
-
-  // Try onion if peers online
-  const online=getOnlinePeers().filter(p=>p!==destPub&&PEERS[p]?.kyberPk);
-  let sent=false;
-  if(online.length>=1){
-    try{sent=await sendOnion(destPub,enc);}catch{}
-  }
-
-  // Direct send (primary path)
-  if(!sent){
-    const ephNK=genNKP();
-    const ev=await buildEv(4,enc,[['p',destPub]],ephNK.priv,ephNK.pub);
-    let n=0;
-    Object.values(WS).forEach(ws=>{if(ws.readyState===1){ws.send(JSON.stringify(['EVENT',ev]));n++;}});
-    if(n===0)throw new Error('relay_offline');
-  }
-
-  // Non-blocking cover traffic
-  const others=Object.keys(PEERS).filter(p=>p!==destPub&&PEERS[p]?.kyberPk);
-  others.forEach(p=>setTimeout(()=>sendDummySealed(p).catch(()=>{}),50+Math.random()*250));
-}
-
-async function onEv(ev){
-  if(!KKkeys)return;
-  // Replay protection — reject replayed or stale events immediately
-  if(isReplay(ev))return;
-  // Sealed sender: event pubkey may be ephemeral — real sender is inside payload
-  // We try to decrypt regardless of pubkey
-  let str,realSenderPub=ev.pubkey;
-  try{
-    const parsed=JSON.parse(ev.content);
-
-    // Handle heartbeat ping (v:5)
-    if(parsed.v===5&&ev.kind===4){
-      try{
-        const raw=await aesDec(kemD(parsed.kem,KKkeys.sk),parsed.iv,parsed.ct);
-        const ping=JSON.parse(td(raw));
-        if(ping.from&&ping.from!==NK.pub)markOnline(ping.from);
-      }catch{}
-      return;
-    }
-
-    // Handle onion packet (v:6)
-    if(parsed.v===6&&ev.kind===4){
-      try{
-        const raw=await aesDec(kemD(parsed.kem,KKkeys.sk),parsed.iv,parsed.ct);
-        const layer=JSON.parse(td(raw));
-        if(layer.type==='onion_relay'){
-          // We are an intermediate node — forward to next hop
-          await handleOnionRelay(layer);
-          return;
-        } else if(layer.type==='onion_final'){
-          // We are the destination — decrypt and process payload directly
-          try{
-            const innerParsed=JSON.parse(layer.payload);
-            if(innerParsed.v===4||innerParsed.v===3){
-              // Decrypt outer KEM layer
-              const outerBytes=await aesDec(kemD(innerParsed.kem,KKkeys.sk),innerParsed.iv,innerParsed.ct);
-              let msgStr;
-              try{
-                const rlen=new DataView(outerBytes.buffer,outerBytes.byteOffset,2).getUint16(0);
-                if(rlen>0&&rlen<=outerBytes.length-2)msgStr=unpadPlain(outerBytes);
-              }catch{}
-              if(!msgStr)msgStr=td(outerBytes);
-              const obj=JSON.parse(msgStr);
-              if(!obj.id||!obj.type||obj.type==='__pad__')return;
-              if(isExpired(obj))return;
-              // Register sender from _sender field
-              if(obj._sender?.nostr&&obj._sender?.kyber){
-                const sn=obj._sender.nostr;const sk=obj._sender.kyber;
-                if(!PEERS[sn]){
-                  PEERS[sn]={name:sn.slice(0,10),color:COLS[Object.keys(PEERS).length%COLS.length],kyberPk:sk};
-                  savePeers();renderContacts();ktRecord(sn,null,sk,'key_first');
-                }
-                markOnline(sn);
-              }
-              const fp=obj._sender?.nostr||ev.pubkey;
-              if(fp===NK.pub)return;
-              obj.from=fp;
-              obj._nostrId=ev.id;
-              // Decode b64 media
-              if(obj.payload?._b64){
-                const bin=atob(obj.payload._b64);const bytes=new Uint8Array(bin.length);
-                for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
-                obj.payload._bytes=bytes;delete obj.payload._b64;
-              }
-              if(!C.merge(obj))return;
-              if(AP===fp)renderMsgs();else{renderContacts();showBadge();}
-            }
-          }catch(e){console.warn('Onion final process error',e);}
-          return;
-        }
-      }catch(e){console.warn('Onion process error',e);}
-      return;
-    }
-
-    const isV4=(parsed.v===4);
-    if(isV4&&ev.kind===4){
-      // Decrypt: ML-KEM outer layer → unpad → get plaintext
-      try{
-        const raw=await aesDec(kemD(parsed.kem,KKkeys.sk),parsed.iv,parsed.ct);
-        let decrypted;
-        try{
-          if(raw.length>=2){
-            const rlen=new DataView(raw.buffer,raw.byteOffset,2).getUint16(0);
-            if(rlen>0&&rlen<=raw.length-2)decrypted=unpadPlain(raw);
-          }
-        }catch{}
-        if(!decrypted)decrypted=td(raw);
-        str=decrypted;
-      }catch{return;}
-    } else if(parsed.v===3){
-      // v:3 = signaling / legacy — simple KEM no padding
-      try{
-        const raw=await aesDec(kemD(parsed.kem,KKkeys.sk),parsed.iv,parsed.ct);
-        str=td(raw);
-      }catch{return;}
-    } else {
-      return; // unknown version
-    }
-  }catch{return;}
-  let obj;try{obj=JSON.parse(str);}catch{return;}
-
-  // Extract real sender from sealed payload
-  const fp=obj._sender?.nostr||realSenderPub;
-  if(fp===NK.pub)return; // own message echoed back
-
-  // Auto-register peer from sealed _sender field
-  if(obj._sender?.nostr&&obj._sender?.kyber){
-    const sn=obj._sender.nostr;const sk=obj._sender.kyber;
-    if(!PEERS[sn]){
-      PEERS[sn]={name:sn.slice(0,10),color:COLS[Object.keys(PEERS).length%COLS.length],kyberPk:sk};
-      savePeers();renderContacts();
-      // KT: first time seeing this peer
-      ktRecord(sn,null,sk,'key_first');
-    } else {
-      const chk=ktCheck(sn,sk);
-      if(chk==='changed'){
-        // KEY CHANGE DETECTED — log and warn
-        ktRecord(sn,PEERS[sn].kyberPk,sk,'key_changed');
-        PEERS[sn].kyberPk=sk;PEERS[sn].fpVerified=null; // reset verification
-        savePeers();
-        // Show warning in UI
-        setTimeout(()=>alert('⚠ XƏBƏRDARLIQ: '+(PEERS[sn]?.name||sn.slice(0,10))+' istifadəçisinin açarı dəyişdi!\nBu MITM hücumu ola bilər.\nFingerprint-i yenidən təsdiqləyin!'),500);
-      } else if(chk==='new'){
-        ktRecord(sn,null,sk,'key_first');
-      } else {
-        ktRecord(sn,PEERS[sn].kyberPk,sk,'key_ok');
-      }
-      if(!PEERS[sn].kyberPk){PEERS[sn].kyberPk=sk;savePeers();}
-    }
-  }
-  // Legacy: also check tags for kyberPk (non-sealed messages)
-  const kyberTag=ev.tags?.find(t=>t[0]==='kyber'&&t[1]?.length>100);
-  if(kyberTag&&fp&&!PEERS[fp]?.kyberPk){
-    if(!PEERS[fp])PEERS[fp]={name:fp.slice(0,10),color:COLS[Object.keys(PEERS).length%COLS.length],kyberPk:kyberTag[1]};
-    else PEERS[fp].kyberPk=kyberTag[1];
-    savePeers();
-  }
-
-  if(ev.kind===4){
-    if(!obj.id||!obj.type)return;
-    if(obj.type==='__pad__')return;
-    // Check expiry
-    if(isExpired(obj))return;
-    // Store nostr event id for potential relay deletion
-    obj._nostrId=ev.id;
-    // Decode relay-sent media (_b64 → _bytes)
-    if(obj.payload?._b64){
-      try{
-        const bin=atob(obj.payload._b64);
-        const bytes=new Uint8Array(bin.length);
-        for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
-        obj.payload._bytes=bytes;
-        delete obj.payload._b64;
-      }catch{}
-    }
-    // Ensure from field is real sender
-    obj.from=fp;
-    // Mark sender as online since they just sent a message
-    if(fp&&fp!==NK.pub)markOnline(fp);
-    // Verify deniable auth tag — warns if tampered, but doesn't block (backwards compat)
-    const daResult=await verifyDeniable(obj,fp);
-    if(daResult===false){
-      // Tag present but invalid — possible tampering, drop silently
-      console.warn('DA: invalid auth tag from',fp?.slice(0,8));
-      return;
-    }
-    if(!C.merge(obj))return;
-    if(AP===fp)renderMsgs();else{renderContacts();showBadge();}
-  }
-  else if(ev.kind===25050){await onSig(fp,obj);}
-}
-
-// ══════════════════════════════════════════════════════
-//  WebRTC — PCManager with FULL ICE support + TURN fallback
-// ══════════════════════════════════════════════════════
-
-// ══════════════════════════════════════════════════════
-//  WebRTC — TURN-only for calls (IP protection + cross-network)
-//           STUN+TURN for DataChannel (media transfers)
-// ══════════════════════════════════════════════════════
-
-// ══════════════════════════════════════════════════════
-//  Double-Hop TURN — Metadata Protection
-//
-//  Architecture:
-//    Caller → Oracle TURN (hop 1) → Cloudflare TURN (hop 2) → Callee
-//
-//  Oracle sees:  caller real IP + Cloudflare IP
-//  Cloudflare sees: Oracle IP + callee IP  ← does NOT see caller real IP
-//  Neither sees: both endpoints simultaneously
-//
-//  ICE Restart: every 5 min — breaks long-term traffic correlation
-//  Traffic Shaping: constant bitrate padding — hides silence/activity patterns
-// ══════════════════════════════════════════════════════
-
-// ══════════════════════════════════════════════════════
-//  TURN-Only Configuration — No STUN, No P2P
-//  Calls:      CF TURN  (1TB/month, global PoP, fast)
-//  DataChannel: CF TURN  (same — consistent, IP protected)
-//  Application-Layer Double-Hop:
-//    Sender encrypts payload → wraps for Oracle → Oracle
-//    forwards to CF → CF only sees inner ciphertext
-//    CF never knows real content. Oracle never knows destination.
-//  iceTransportPolicy:'relay' on ALL connections — no leaks
-// ══════════════════════════════════════════════════════
-
-// ── Cloudflare TURN — all WebRTC traffic ──
-const CF_TURN_API='https://rtc.live.cloudflare.com/v1/turn/keys/5168e26778eef61b15d6901ecc210286/credentials/generate-ice-servers';
-const CF_TURN_TOKEN='461333bdc9d7c16a7293f2a01e08602819b040f37160bb181a17dfd878ce60d2';
-let _cfIceCache=null;
-
-async function getCFIce(){
-  const now=Date.now();
-  if(_cfIceCache&&now<_cfIceCache.exp)return _cfIceCache.servers;
-  try{
-    const r=await fetch(CF_TURN_API,{
-      method:'POST',
-      headers:{'Authorization':'Bearer '+CF_TURN_TOKEN,'Content-Type':'application/json'},
-      body:JSON.stringify({ttl:86400})
-    });
-    const d=await r.json();
-    const servers=(d.iceServers||[]).filter(s=>s.urls);
-    _cfIceCache={servers,exp:now+82800000};
-    return servers;
-  }catch(e){
-    console.warn('CF TURN fetch failed — using Oracle fallback',e);
-    return [];
-  }
-}
-
-// ── Oracle TURN — fallback when CF unavailable ──
-const ICE_ORACLE_FALLBACK=[
-  {urls:'turn:144.24.249.21:3478',username:'relay',credential:'Relay2005!'},
-  {urls:'turn:144.24.249.21:3478?transport=tcp',username:'relay',credential:'Relay2005!'},
-];
-
-// Get TURN servers — CF preferred, Oracle as fallback
-// STUN never included — relay-only policy enforced
-async function getTurnServers(){
-  const cfServers=await getCFIce();
-  return cfServers.length?cfServers:ICE_ORACLE_FALLBACK;
-}
-
-// ── Application-Layer Double-Hop ──
-// Since WebRTC only supports one active TURN,
-// we implement double-hop at application layer:
-// 1. Payload encrypted for final recipient (ML-KEM)
-// 2. Wrapped in a second encryption layer for Oracle relay node
-// 3. Oracle decrypts outer, sees only "forward this to CF"
-// 4. Sends encrypted inner payload via its own TURN connection
-// Result: CF sees encrypted blob from Oracle IP, never from user IP
-// This runs alongside WebRTC — adds metadata protection layer
-
-async function appLayerDoubleHop(destPeerPub,encPayload){
-  // Inner: already encrypted for destination
-  // Outer: encrypt for Oracle relay node (uses Nostr signaling channel)
-  // Oracle node receives this via Nostr, re-sends to destination via Nostr
-  // This gives hop separation at application layer
-  // Note: Oracle node here means another trusted relay — in practice
-  // this is the Nostr relay operator separation, not a separate server
-  // For now: direct send with CF TURN handles the transport layer isolation
-  return encPayload; // passthrough — CF TURN provides transport isolation
-}
-
-// ── ICE Restart — breaks traffic correlation every 5 min ──
-const ICE_RESTART_INTERVAL=5*60*1000; // 5 minutes
-let _iceRestartTimer=null;
-
-async function scheduleIceRestart(peerPub){
-  clearTimeout(_iceRestartTimer);
-  _iceRestartTimer=setTimeout(async()=>{
-    if(callState!=='connected'||!PCM?.pc)return;
-    const peer=PEERS[peerPub];if(!peer?.kyberPk)return;
-    try{
-      // ICE restart: new credentials, breaks session correlation
-      const offer=await PCM.pc.createOffer({iceRestart:true});
-      await PCM.pc.setLocalDescription(offer);
-      await waitForGathering(PCM.pc,6000);
-      const sdp=PCM.pc.localDescription?.sdp||offer.sdp;
-      await nostrPub(peerPub,peer.kyberPk,{type:'ice_restart',sdp:sanitizeSDP(sdp)},25050);
-      setCallSt('Bağlandı · Sessiya yeniləndi · Epoch '+_callEpoch,'conn');
-      // Schedule next restart
-      scheduleIceRestart(peerPub);
-    }catch(e){console.warn('ICE restart failed',e);}
-  },ICE_RESTART_INTERVAL);
-}
-
-function stopIceRestart(){clearTimeout(_iceRestartTimer);_iceRestartTimer=null;}
-
-// ── Constant Bitrate Padding — hides activity patterns ──
-// Sends SRTP-sized dummy packets via DataChannel during calls
-// TURN sees: constant stream of same-sized packets regardless of speech/silence
-const CBR_INTERVAL=20;   // 20ms — matches Opus frame size
-const CBR_PACKET_SIZE=160; // bytes — typical Opus packet
-let _cbrTimer=null;
-
-function startCBR(){
-  if(_cbrTimer)return;
-  _cbrTimer=setInterval(()=>{
-    if(PCM?.dcOpen()&&callState==='connected'){
-      // Send dummy packet to mask silence periods
-      const dummy=new Uint8Array(CBR_PACKET_SIZE);
-      crypto.getRandomValues(dummy);
-      try{PCM.dc.send(JSON.stringify({type:'__cbr__',d:hex(dummy.slice(0,8))}));}catch{}
-    }
-  },CBR_INTERVAL);
-}
-
-function stopCBR(){clearInterval(_cbrTimer);_cbrTimer=null;}
-
-class PCManager{
-  constructor(isCall=false){
-    this.pc=null;this.dc=null;this.iceQ=[];this.remoteSet=false;
-    this.peer=null;this.isCall=isCall;
-  }
-  async init(peerPub,withAudio){
-    this.peer=peerPub;this.iceQ=[];this.remoteSet=false;
-    if(this.pc)try{this.pc.close();}catch{}
-    // Calls: Double-hop TURN (Oracle → CF) — neither server sees both endpoints
-    // DataChannel: Oracle TURN only (media transfers, no double-hop needed)
-    // TURN-only for ALL connections — no STUN, no P2P, no IP leaks
-    const turnServers=await getTurnServers();
-    const cfg={iceServers:turnServers,iceTransportPolicy:'relay'};
-    this.pc=new RTCPeerConnection(cfg);
-    if(withAudio){
-      const stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,autoGainControl:true},video:false});
-      localStream=stream;stream.getTracks().forEach(t=>this.pc.addTrack(t,stream));
-      remoteAudio=new Audio();remoteAudio.autoplay=true;
-      this.pc.ontrack=e=>{remoteAudio.srcObject=e.streams[0];
-        // iOS requires user gesture — unlock audio context
-        remoteAudio.play().catch(()=>{});
-        startViz();
-      };
-    }
-    this.dc=this.pc.createDataChannel('media',{ordered:true,maxRetransmits:30});
-    this._setupDC(this.dc);
-    this.pc.ondatachannel=e=>{this.dc=e.channel;this._setupDC(this.dc);};
-    this.pc.onicecandidate=async e=>{
-      if(!e.candidate||!e.candidate.candidate)return;
-      const p=PEERS[this.peer];if(!p?.kyberPk)return;
-      await nostrPub(this.peer,p.kyberPk,{type:'ice',candidate:e.candidate.toJSON()},25050);
-    };
-    this.pc.onconnectionstatechange=()=>{
-      const s=this.pc?.connectionState;
-      updateP2PStatus(s);
-      if(s==='connected'&&withAudio){
-        callState='connected';
-        setCallSt('Bağlandı · 2-Hop TURN · PFS · IP Gizli','conn');
-        startTimer();
-        document.getElementById('callBg').classList.add('on');
-        // Start key rotation if we are the caller
-        if(callPeer&&this.peer===callPeer)startKeyRotation(this.peer);
-        // Start CBR padding + ICE restart schedule
-        startCBR();
-        if(callPeer&&this.peer===callPeer)scheduleIceRestart(this.peer);
-      } else if(s==='disconnected'&&withAudio){
-        // Give 6s before giving up
-        setTimeout(()=>{if(this.pc?.connectionState==='disconnected'||this.pc?.connectionState==='failed')endCall();},6000);
-      } else if(s==='failed'&&withAudio){
-        endCall();
-      } else if(s==='failed'&&!withAudio){
-        // DC failed — retry with full TURN
-        retryWithTurn(this.peer);
-      }
-    };
-  }
-  _setupDC(ch){
-    ch.binaryType='arraybuffer';
-    ch.onmessage=async e=>{
-      try{
-        const msg=JSON.parse(e.data);
-        // Silently discard CBR padding packets
-        if(msg.type==='__cbr__')return;
-        // Key rotation messages handled separately
-        if(msg.type==='key_rotate'||msg.type==='key_rotate_resp'){
-          await handleKeyRotate(msg);return;
-        }
-        await onDCMsg(msg);
-      }catch(err){console.error('DC msg',err);}
-    };
-    ch.onopen=()=>{updateP2PStatus('open');processDCQ();};
-    ch.onclose=()=>updateP2PStatus('closed');
-  }
-  async setRemote(desc){
-    await this.pc.setRemoteDescription(desc);this.remoteSet=true;
-    for(const c of this.iceQ){try{await this.pc.addIceCandidate(c);}catch{}}
-    this.iceQ=[];
-  }
-  async addICE(c){this.remoteSet?await this.pc.addIceCandidate(c).catch(()=>{}):this.iceQ.push(c);}
-  dcOpen(){return this.dc?.readyState==='open';}
-  send(s){if(this.dcOpen())this.dc.send(s);}
-  close(){try{if(this.pc)this.pc.close();}catch{}this.pc=null;this.dc=null;}
-}
-
-let PCM=null,localStream=null,remoteAudio=null;
-let callPeer=null,callState='idle',muted=false;
-let timerInt=null,timerSecs=0,pendingOffer=null,vizInt=null;
-let dcQ=[]; // queue of {peerPub, file} waiting for DC
-const inTransfers={};
-
-function updateP2PStatus(s){
-  const el=document.getElementById('p2pInd');
-  if(el){el.textContent='P2P: '+(s||'—');el.classList.toggle('on',s==='open'||s==='connected');}
-}
-
-function sanitizeSDP(s){return s.replace(/^c=IN IP[46] \S+$/mg,'c=IN IP4 0.0.0.0').replace(/^(o=\S+ \S+ \S+ IN IP[46] )\S+$/mg,'$10.0.0.0');}
-
-// Wait for ICE gathering — returns when complete OR timeout
-// For TURN-only: waits until relay candidate arrives
-function waitForGathering(pc,timeout=8000){
-  return new Promise(resolve=>{
-    if(pc.iceGatheringState==='complete'){resolve();return;}
-    const done=()=>{
-      pc.removeEventListener('icegatheringstatechange',onState);
-      pc.removeEventListener('icecandidate',onCand);
-      resolve();
-    };
-    const onState=()=>{if(pc.iceGatheringState==='complete')done();};
-    // Also resolve early if we got at least one relay candidate
-    let hasRelay=false;
-    const onCand=e=>{
-      if(e.candidate?.type==='relay'&&!hasRelay){
-        hasRelay=true;
-        // Small delay to collect more candidates
-        setTimeout(done,500);
-      }
-    };
-    pc.addEventListener('icegatheringstatechange',onState);
-    pc.addEventListener('icecandidate',onCand);
-    setTimeout(done,timeout);
-  });
-}
-
-// DataChannel message handler
-async function onDCMsg(msg){
-  if(msg.type==='tstart'){inTransfers[msg.tid]={meta:msg,chunks:new Array(msg.total),received:0};}
-  else if(msg.type==='tchunk'){
-    const buf=inTransfers[msg.tid];if(!buf)return;
-    try{
-      const dec=await pqDecBin(KKkeys.sk,msg.kem,msg.iv,msg.ct);
-      buf.chunks[msg.idx]=dec;buf.received++;
-      // Progress
-      const op=C.ops.find(o=>o.id===msg.tid);
-      if(op){op.payload._prog=buf.received/msg.total;renderMsgs();}
-      if(buf.received>=msg.total){
-        let sz=0;buf.chunks.forEach(c=>{if(c)sz+=c.length;});
-        const data=new Uint8Array(sz);let off=0;buf.chunks.forEach(c=>{if(c){data.set(c,off);off+=c.length;}});
-        delete inTransfers[msg.tid];
-        const{meta}=buf;
-        const mt=meta.mime.startsWith('image')?'image':meta.mime.startsWith('audio')?'voice':'file';
-        const actualSrc=PCM?.peer||callPeer||AP||'unknown';
-        const op2={id:msg.tid,from:actualSrc,to:NK.pub,lam:C.lam+1,vc:{[actualSrc]:C.lam+1},type:mt,payload:{_bytes:data,name:meta.name,size:meta.size,mimeType:meta.mime,duration:meta.dur||0},ts:Date.now()};
-        // IDB-yə saxla ki refresh-dən sonra qalsın
-        idbSave(msg.tid,data,meta.mime);
-        C.merge(op2);renderMsgs();
-      }
-    }catch(e){console.error('P2P chunk decrypt fail',e);}
-  }
-}
-
-async function processDCQ(){
-  if(processDCQ._running)return;
-  processDCQ._running=true;
-  while(dcQ.length&&PCM?.dcOpen()){
-    const item=dcQ.shift();
-    await _dcSendFile(item);
-  }
-  processDCQ._running=false;
-}
-
-const CHUNK=14*1024; // 14KB safe chunk
-
-// item: {peerPub, file, tid, data, localOp} — sendMedia-dan gəlir
-async function _dcSendFile(item){
-  const{peerPub,file,tid,data,localOp}=item;
-  const peer=PEERS[peerPub];if(!peer?.kyberPk)return;
-  if(!PCM?.dcOpen()){console.error('DC not open');return;}
-
-  const total=Math.ceil(data.length/CHUNK);
-  PCM.dc.send(JSON.stringify({type:'tstart',tid,total,
-    name:file.name,size:file.size,mime:file.type,dur:file._duration||0}));
-
-  for(let i=0;i<total;i++){
-    if(!PCM?.dcOpen()){console.error('DC closed at chunk',i);break;}
-    const chunk=data.slice(i*CHUNK,(i+1)*CHUNK);
-    const{kem,iv,ct}=await pqEncBin(peer.kyberPk,chunk);
-    if(!PCM?.dcOpen())break;
-    PCM.dc.send(JSON.stringify({type:'tchunk',tid,idx:i,total,kem,iv,ct}));
-    // Progress hər chunk-da yenilə
-    const op=C.ops.find(o=>o.id===tid);
-    if(op){op.payload._prog=(i+1)/total;renderMsgs();}
-  }
-  // Göndərilib — progress sil
-  const op=C.ops.find(o=>o.id===tid);
-  if(op){delete op.payload._prog;renderMsgs();}
-}
-
-// Ensure DataChannel is open via TURN
-async function ensureDC(peerPub){
-  if(PCM?.dcOpen())return true;
-  const peer=PEERS[peerPub];if(!peer?.kyberPk)return false;
-
-  // Close stale connection
-  if(PCM){try{PCM.close();}catch{}PCM=null;}
-
-  PCM=new PCManager(false);
-  await PCM.init(peerPub,false);
-  PCM.peer=peerPub;
-
-  const offer=await PCM.pc.createOffer();
-  await PCM.pc.setLocalDescription(offer);
-  // Wait for TURN candidates to be gathered
-  await waitForGathering(PCM.pc,8000);
-  const sdp=PCM.pc.localDescription?.sdp||offer.sdp;
-  await nostrPub(peerPub,peer.kyberPk,{type:'dc_offer',sdp:sanitizeSDP(sdp)},25050);
-
-  // Wait up to 30s for DC to open
-  return new Promise(resolve=>{
-    const check=setInterval(()=>{
-      if(PCM?.dcOpen()){clearInterval(check);clearTimeout(tout);resolve(true);}
-    },300);
-    const tout=setTimeout(()=>{
-      clearInterval(check);
-      console.warn('ensureDC timeout');
-      resolve(false);
-    },30000);
-  });
-}
-
-async function retryWithTurn(peerPub){
-  const peer=PEERS[peerPub];if(!peer?.kyberPk)return;
-  console.log('DC retry...');
-  if(PCM){try{PCM.close();}catch{}}
-  PCM=new PCManager(false);
-  await PCM.init(peerPub,false);
-  PCM.peer=peerPub;
-  const offer=await PCM.pc.createOffer();
-  await PCM.pc.setLocalDescription(offer);
-  await waitForGathering(PCM.pc,5000);
-  await nostrPub(peerPub,peer.kyberPk,{type:'dc_offer',sdp:sanitizeSDP(PCM.pc.localDescription.sdp)},25050);
-}
-
-// ── Bütün media → CF TURN DataChannel ──
-// Nostr: yalnız text mesajı + signalling
-// Mediya (səs, foto, video, fayl): hamısı CF TURN DataChannel
-// Offline/online fərqi yoxdur — DC qurulur, TURN-dan keçir, gedir
-const MAX_FILE_SIZE=25*1024*1024; // 25MB — CF TURN kvotasını qoruyur
-
-async function sendMedia(peerPub,file){
-  const peer=PEERS[peerPub];
-  if(!peer?.kyberPk){alert('Peer key yoxdur. Əvvəl bir mətn mesajı göndər.');return;}
-  if(file.size>MAX_FILE_SIZE){alert('Fayl həcmi çox böyükdür. Maksimum: 25MB');return;}
-
-  // Dərhal chat-da göstər — istifadəçi gözləyir
-  const mt=file.type.startsWith('image')?'image':file.type.startsWith('audio')?'voice':'file';
-  const tid=hex(rnd(16));
-  const ab=await file.arrayBuffer();
-  const data=new Uint8Array(ab);
-  const localOp=C.add(mt,{_bytes:data,name:file.name,size:file.size,
-    mimeType:file.type,duration:file._duration||0,_prog:0},peerPub);
-  localOp.id=tid;
-  // IDB-yə saxla ki refresh sonra da görsənsin
-  idbSave(tid,data,file.type);
-  C._save();
-  renderMsgs();
-
-  // Faylı queue-ya əlavə et — tid ilə birlikdə
-  dcQ.push({peerPub,file,tid,data,localOp});
-
-  if(PCM?.dcOpen()){
-    processDCQ();
-  } else {
-    const ok=await ensureDC(peerPub);
-    if(ok){
-      processDCQ();
-    } else {
-      // DC açılmadı — pending göstər, user retry edə bilər
-      dcQ=dcQ.filter(q=>q.tid!==tid);
-      const op=C.ops.find(o=>o.id===tid);
-      if(op){op.payload._prog=undefined;op.payload._failed=true;renderMsgs();}
-      console.error('DC could not open for',peerPub);
-    }
-  }
-}
-
-// ══════════════════════════════════════════════════════
-//  Voice recording
-// ══════════════════════════════════════════════════════
-let mediaRec=null,vChunks=[],recStart=0,recCancelled=false;
-
-function startRec(e){
-  e.preventDefault();
-  if(mediaRec||!AP)return;
-  recCancelled=false;recStart=Date.now();
-  document.getElementById('voiceBtn').classList.add('rec');
-  navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
-    vChunks=[];
-    let opts={};
-    if(MediaRecorder.isTypeSupported(AUDIO_MIME))opts.mimeType=AUDIO_MIME;
-    mediaRec=new MediaRecorder(stream,opts);
-    mediaRec.ondataavailable=e=>{if(e.data?.size>0)vChunks.push(e.data);};
-    mediaRec.start(200);
-  }).catch(err=>{
-    document.getElementById('voiceBtn').classList.remove('rec');
-    alert('Mikrofon icazəsi lazımdır: '+err.message);
-  });
-}
-
-async function stopRec(e){
-  e.preventDefault();
-  document.getElementById('voiceBtn').classList.remove('rec');
-  if(!mediaRec||mediaRec.state==='inactive'){mediaRec=null;return;}
-  const dur=Math.round((Date.now()-recStart)/1000);
-  if(dur<1||recCancelled){mediaRec.stop();mediaRec.stream.getTracks().forEach(t=>t.stop());mediaRec=null;return;}
-  return new Promise(resolve=>{
-    mediaRec.onstop=async()=>{
-      const mime=vChunks[0]?.type||AUDIO_MIME||'audio/mp4';
-      const blob=new Blob(vChunks,{type:mime});
-      mediaRec.stream.getTracks().forEach(t=>t.stop());mediaRec=null;
-      if(!AP||!PEERS[AP]?.kyberPk){resolve();return;}
-      // Səsli mesaj → DC üzərindən CF TURN
-      const ext=mime.includes('mp4')?'mp4':mime.includes('webm')?'webm':'m4a';
-      const vFile=new File([blob],'voice.'+ext,{type:mime});
-      vFile._duration=dur;
-      await sendMedia(AP,vFile);
-      resolve();
-    };
-    mediaRec.stop();
-  });
-}
-function cancelRec(){recCancelled=true;document.getElementById('voiceBtn').classList.remove('rec');if(mediaRec&&mediaRec.state!=='inactive'){mediaRec.stop();if(mediaRec)mediaRec.stream?.getTracks().forEach(t=>t.stop());mediaRec=null;}}
-
-async function playVoice(opId){
-  const op=C.ops.find(o=>o.id===opId);if(!op)return;
-  const bytes=op.payload?._bytes;
-  if(!bytes){alert('Audio hələ yüklənir...');return;}
-  playBytes(bytes,op.payload?.mimeType);
-}
-
-// ══════════════════════════════════════════════════════
-//  Call (WebRTC audio) — with TURN fallback
-// ══════════════════════════════════════════════════════
-async function startCall(peerPub){
-  const peer=PEERS[peerPub];
-  if(!peer?.kyberPk){alert('Peer key yoxdur. Əvvəl bir mətn mesajı göndər.');return;}
-  callPeer=peerPub;callState='calling';
-  showCallScreen(peerPub,'Zəng edilir...','ring');
-  // TURN-only: iceTransportPolicy='relay' set inside PCManager when withAudio=true
-  PCM=new PCManager(true);
-  await PCM.init(peerPub,true);
-  const offer=await PCM.pc.createOffer({offerToReceiveAudio:true});
-  await PCM.pc.setLocalDescription(offer);
-  await waitForGathering(PCM.pc,6000);
-  const sdp=PCM.pc.localDescription?.sdp||offer.sdp;
-  await nostrPub(peerPub,peer.kyberPk,{type:'offer',sdp:sanitizeSDP(sdp)},25050);
-  setCallSt('Gözlənilir... (TURN · IP Gizli)','ring');
-  // Timeout if no answer in 45s
-  setTimeout(()=>{
-    if(callState==='calling'){setCallSt('Cavab yoxdur','err');setTimeout(()=>endCall(),2000);}
-  },45000);
-}
-
-function startCallFromChat(){if(AP)startCall(AP);}
-
-async function answerCall(){
-  document.getElementById('incoming').classList.remove('show');
-  if(!pendingOffer)return;
-  const{sdp,from}=pendingOffer;pendingOffer=null;
-  callPeer=from;callState='connecting';
-  showCallScreen(from,'Cavab verilir...','ring');
-  const peer=PEERS[from];
-  // Always TURN-only on answer side too
-  PCM=new PCManager(true);
-  await PCM.init(from,true);
-  await PCM.setRemote(new RTCSessionDescription({type:'offer',sdp}));
-  const answer=await PCM.pc.createAnswer();
-  await PCM.pc.setLocalDescription(answer);
-  await waitForGathering(PCM.pc,6000);
-  const answerSdp=PCM.pc.localDescription?.sdp||answer.sdp;
-  await nostrPub(from,peer.kyberPk,{type:'answer',sdp:sanitizeSDP(answerSdp)},25050);
-  setCallSt('Bağlanır... (TURN)','ring');
-}
-
-function rejectCall(){
-  document.getElementById('incoming').classList.remove('show');
-  if(pendingOffer?.from){const p=PEERS[pendingOffer.from];if(p?.kyberPk)nostrPub(pendingOffer.from,p.kyberPk,{type:'reject'},25050).catch(()=>{});}
-  pendingOffer=null;
-}
-
-async function onSig(fp,obj){
-  const{type}=obj;
-  if(type==='offer'){
-    // Peer yoxdursa avtomatik əlavə et — zəng gəlir deməli tanıyırıq
-    if(!PEERS[fp]){
-      PEERS[fp]={name:fp.slice(0,10),color:COLS[Object.keys(PEERS).length%COLS.length],kyberPk:obj.kyberPk||''};
-      savePeers();renderContacts();
-    }
-    if(callState!=='idle'){if(fp!==callPeer)showIncoming(fp);return;}
-    pendingOffer={sdp:obj.sdp,from:fp};
-    showIncoming(fp);
-  }
-  else if(type==='answer'&&PCM&&(callState==='calling'||callState==='connecting')){
-    callState='connecting';
-    await PCM.setRemote(new RTCSessionDescription({type:'answer',sdp:obj.sdp})).catch(()=>{});
-    setCallSt('ICE bağlantısı qurulur...','ring');
-  }
-  else if(type==='ice_restart'&&PCM&&callState==='connected'){
-    // Peer restarted ICE — accept new offer and send answer
-    try{
-      await PCM.setRemote(new RTCSessionDescription({type:'offer',sdp:obj.sdp}));
-      const answer=await PCM.pc.createAnswer();
-      await PCM.pc.setLocalDescription(answer);
-      await waitForGathering(PCM.pc,6000);
-      const peer=PEERS[fp];if(!peer?.kyberPk)return;
-      await nostrPub(fp,peer.kyberPk,{type:'ice_restart_answer',sdp:sanitizeSDP(PCM.pc.localDescription.sdp)},25050);
-    }catch(e){console.warn('ICE restart answer failed',e);}
-  }
-  else if(type==='ice_restart_answer'&&PCM&&callState==='connected'){
-    try{
-      await PCM.setRemote(new RTCSessionDescription({type:'answer',sdp:obj.sdp})).catch(()=>{});
-    }catch{}
-  }
-  else if(type==='dc_offer'){
-    const peer=PEERS[fp];if(!peer?.kyberPk)return;
-    if(PCM){try{PCM.close();}catch{}PCM=null;}
-    PCM=new PCManager(false);
-    await PCM.init(fp,false);
-    PCM.peer=fp;
-    await PCM.setRemote(new RTCSessionDescription({type:'offer',sdp:obj.sdp}));
-    const answer=await PCM.pc.createAnswer();
-    await PCM.pc.setLocalDescription(answer);
-    await waitForGathering(PCM.pc,8000);
-    const sdp=PCM.pc.localDescription?.sdp||answer.sdp;
-    await nostrPub(fp,peer.kyberPk,{type:'dc_answer',sdp:sanitizeSDP(sdp)},25050);
-  }
-  else if(type==='dc_answer'&&PCM){
-    await PCM.setRemote(new RTCSessionDescription({type:'answer',sdp:obj.sdp})).catch(()=>{});
-  }
-  else if(type==='ice'&&PCM){await PCM.addICE(new RTCIceCandidate(obj.candidate));}
-  else if(type==='reject'){setCallSt('Rədd edildi','err');setTimeout(()=>endCall(),1500);}
-  else if(type==='end'){endCall();}
-}
-
-function endCall(){
-  if(callPeer&&PEERS[callPeer]?.kyberPk&&callState!=='idle')
-    nostrPub(callPeer,PEERS[callPeer].kyberPk,{type:'end'},25050).catch(()=>{});
-  if(PCM&&callState!=='idle'){PCM.close();PCM=null;}
-  if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null;}
-  if(remoteAudio){remoteAudio.srcObject=null;remoteAudio=null;}
-  stopTimer();stopViz();stopKeyRotation();stopCBR();stopIceRestart();
-  callPeer=null;callState='idle';muted=false;
-  document.getElementById('muteBtn').textContent='🎙';
-  document.getElementById('muteBtn').classList.remove('on');
-  document.getElementById('callBg').classList.remove('on');
-  document.getElementById('callTm').classList.remove('show');
-  document.getElementById('viz').classList.remove('show');
-  updateP2PStatus(null);
-  goContacts();
-}
-
-function toggleMute(){if(!localStream)return;muted=!muted;localStream.getTracks().forEach(t=>t.enabled=!muted);const b=document.getElementById('muteBtn');b.textContent=muted?'🔇':'🎙';b.classList.toggle('on',muted);}
-function toggleSpk(){if(!remoteAudio)return;remoteAudio.muted=!remoteAudio.muted;document.getElementById('spkBtn').textContent=remoteAudio.muted?'🔕':'🔊';}
-
-// ══════════════════════════════════════════════════════
-//  Call Forward Secrecy — Application-Layer Key Rotation
-//
-//  Problem: WebRTC DTLS-SRTP session key is fixed for call duration.
-//  JavaScript cannot access SRTP keys directly.
-//
-//  Solution: Over the existing DataChannel, perform ML-KEM key
-//  exchange every 60 seconds. Both sides derive a shared "epoch key".
-//  This epoch key is used to:
-//    1. Verify peer is still the same party (authentication)
-//    2. Create a rolling session token — recorded traffic from
-//       epoch N cannot be decrypted using epoch N+1 material.
-//  If DTLS session is compromised after rotation, attacker only gets
-//  audio from the current epoch — not previous epochs.
-//
-//  Each rotation:
-//    Caller → generates ephemeral KEM keypair
-//    Caller → sends {type:'key_rotate', ephPk} over DataChannel
-//    Callee → encapsulates: {kem_ct, K} = kemE(ephPk)
-//    Callee → sends {type:'key_rotate_resp', kem_ct} back
-//    Caller → decapsulates: K = kemD(kem_ct, ephSk)
-//    Both   → epochKey = HKDF(K, epoch_number)
-//    Both   → update UI, discard previous epoch material
-// ══════════════════════════════════════════════════════
-
-const ROTATE_INTERVAL_MS=60000; // 60 seconds
-let _rotateTimer=null;
-let _callEpoch=0;
-let _callEphKP=null;      // {pk, sk} — our current ephemeral KEM keypair
-let _callEpochKey=null;   // current epoch shared key (Uint8Array)
-let _pendingRotatePk=null; // caller's ephPk we need to respond to
-
-// Start rotation loop — called by caller after connection established
-function startKeyRotation(peerPub){
-  stopKeyRotation();
-  _callEpoch=0;_callEpochKey=null;
-  const rotate=async()=>{
-    if(callState!=='connected'||!PCM?.dcOpen())return;
-    try{
-      _callEphKP=kemKG();
-      _callEpoch++;
-      PCM.send(JSON.stringify({
-        type:'key_rotate',
-        epoch:_callEpoch,
-        ephPk:_callEphKP.pk
-      }));
-      // Update UI
-      setCallSt('Bağlandı · Açar yenilənir... (Epoch '+_callEpoch+')','conn');
-      // Timeout: if no response in 8s, skip this rotation
-      setTimeout(()=>{
-        if(callState==='connected')
-          setCallSt('Bağlandı · TURN · PFS · Epoch '+_callEpoch,'conn');
-      },8000);
-    }catch(e){console.warn('Key rotation error',e);}
-    _rotateTimer=setTimeout(rotate,ROTATE_INTERVAL_MS);
-  };
-  // First rotation after 60s
-  _rotateTimer=setTimeout(rotate,ROTATE_INTERVAL_MS);
-}
-
-function stopKeyRotation(){
-  clearTimeout(_rotateTimer);_rotateTimer=null;
-  _callEpoch=0;_callEphKP=null;_callEpochKey=null;_pendingRotatePk=null;
-}
-
-// Handle key rotation messages over DataChannel
-async function handleKeyRotate(msg){
-  if(msg.type==='key_rotate'){
-    // We are the callee — respond with KEM encapsulation
-    if(!msg.ephPk)return;
-    _pendingRotatePk=msg.ephPk;
-    try{
-      const{ct,K}=kemE(msg.ephPk);
-      // Derive epoch key
-      const epochKey=await hkdf1(K,new Uint8Array(32),'RELAY_CALL_EPOCH_'+msg.epoch);
-      _callEpochKey=epochKey;
-      _callEpoch=msg.epoch;
-      PCM.send(JSON.stringify({type:'key_rotate_resp',epoch:msg.epoch,kem_ct:ct}));
-      setCallSt('Bağlandı · TURN · PFS · Epoch '+msg.epoch,'conn');
-    }catch(e){console.warn('Rotate respond error',e);}
-  }
-  else if(msg.type==='key_rotate_resp'){
-    // We are the caller — decapsulate to get shared epoch key
-    if(!_callEphKP||msg.epoch!==_callEpoch)return;
-    try{
-      const K=kemD(msg.kem_ct,_callEphKP.sk);
-      const epochKey=await hkdf1(K,new Uint8Array(32),'RELAY_CALL_EPOCH_'+msg.epoch);
-      _callEpochKey=epochKey;
-      // Wipe previous ephemeral SK — forward secrecy achieved
-      _callEphKP=null;
-      setCallSt('Bağlandı · TURN · PFS ✓ · Epoch '+msg.epoch,'conn');
-    }catch(e){console.warn('Rotate complete error',e);}
-  }
-}
-
-function startViz(){document.getElementById('viz').classList.add('show');try{const ctx=new AudioContext();const src=ctx.createMediaStreamSource(remoteAudio.srcObject);const an=ctx.createAnalyser();an.fftSize=32;src.connect(an);const viz=document.getElementById('viz');viz.innerHTML='';for(let i=0;i<8;i++){const b=document.createElement('div');b.className='vb';b.style.height='4px';viz.appendChild(b);}const bars=viz.querySelectorAll('.vb');const data=new Uint8Array(an.frequencyBinCount);vizInt=setInterval(()=>{an.getByteFrequencyData(data);bars.forEach((b,i)=>{b.style.height=(4+Math.floor((data[i]||0)/255*32))+'px';});},80);}catch{}}
-function stopViz(){clearInterval(vizInt);vizInt=null;document.getElementById('viz').innerHTML='';}
-function startTimer(){timerSecs=0;document.getElementById('callTm').classList.add('show');timerInt=setInterval(()=>{timerSecs++;document.getElementById('callTm').textContent=String(Math.floor(timerSecs/60)).padStart(2,'0')+':'+String(timerSecs%60).padStart(2,'0');},1000);}
-function stopTimer(){clearInterval(timerInt);timerInt=null;timerSecs=0;document.getElementById('callTm').textContent='00:00';}
-
-// ══════════════════════════════════════════════════════
-//  APP STATE
-// ══════════════════════════════════════════════════════
-const COLS=['#e8ff00','#00aaff','#00ff88','#ff5588','#ff9900','#cc44ff'];
-let NK=null,KKkeys=null,MLDSAkeys=null,C=null,PEERS={},AP=null,OQ=[];
-const savePeers=()=>{try{localStorage.setItem('rl5_peers',JSON.stringify(PEERS));}catch{}};
-const saveOQ=()=>{try{localStorage.setItem('rl5_oq',JSON.stringify(OQ));}catch{}};
-
-// ══════════════════════════════════════════════════════
-//  PIN / Key Encryption
-//  PBKDF2-SHA256 (310 000 iter) → AES-256-GCM
-//  SK-lar localStorage-da yalnız şifrəli saxlanır.
-//  Düzgün PIN olmadan açılmır. Brute-force: yavaş.
-// ══════════════════════════════════════════════════════
-const PIN_SALT_KEY='rl6_pin_salt';
-const PIN_VER_KEY='rl6_pin_ver';   // verifier: AES-GCM(known_plaintext) to check PIN
-const SK_ENC_KEY='rl6_sk_enc';     // {nsk_iv, nsk_ct, ksk_iv, ksk_ct}
-const PBKDF2_ITER=310000;
-
-async function pinToCryptoKey(pin,saltHex){
-  const raw=te(pin);
-  const base=await crypto.subtle.importKey('raw',raw,'PBKDF2',false,['deriveKey']);
-  return crypto.subtle.deriveKey(
-    {name:'PBKDF2',hash:'SHA-256',salt:fhex(saltHex),iterations:PBKDF2_ITER},
-    base,{name:'AES-GCM',length:256},false,['encrypt','decrypt']
-  );
-}
-
-async function encryptWithKey(ck,data){
-  const iv=rnd(12);
-  const inp=typeof data==='string'?te(data):data;
-  const ct=new Uint8Array(await crypto.subtle.encrypt({name:'AES-GCM',iv},ck,inp));
-  return{iv:hex(iv),ct:hex(ct)};
-}
-
-async function decryptWithKey(ck,ivH,ctH){
-  return new Uint8Array(await crypto.subtle.decrypt(
-    {name:'AES-GCM',iv:fhex(ivH)},ck,fhex(ctH)
-  ));
-}
-
-// Encrypt and save both secret keys
-async function saveEncryptedSKs(pin,nkPriv,kkSk){
-  let saltHex=localStorage.getItem(PIN_SALT_KEY);
-  if(!saltHex){saltHex=hex(rnd(32));localStorage.setItem(PIN_SALT_KEY,saltHex);}
-  const ck=await pinToCryptoKey(pin,saltHex);
-  const{iv:niv,ct:nct}=await encryptWithKey(ck,nkPriv);
-  const{iv:kiv,ct:kct}=await encryptWithKey(ck,kkSk);
-  // Verifier: encrypt known string — used to check if PIN is correct without exposing SK
-  const{iv:viv,ct:vct}=await encryptWithKey(ck,'RELAY_PIN_OK');
-  localStorage.setItem(SK_ENC_KEY,JSON.stringify({niv,nct,kiv,kct}));
-  localStorage.setItem(PIN_VER_KEY,JSON.stringify({viv,vct}));
-}
-
-// Try to decrypt SKs with given PIN — returns {nkPriv, kkSk} or throws
-async function loadEncryptedSKs(pin){
-  const saltHex=localStorage.getItem(PIN_SALT_KEY);
-  if(!saltHex)throw new Error('no salt');
-  const ck=await pinToCryptoKey(pin,saltHex);
-  // Check verifier first (fast fail)
-  const ver=JSON.parse(localStorage.getItem(PIN_VER_KEY));
-  const verPlain=td(await decryptWithKey(ck,ver.viv,ver.vct));
-  if(verPlain!=='RELAY_PIN_OK')throw new Error('wrong pin');
-  const enc=JSON.parse(localStorage.getItem(SK_ENC_KEY));
-  const nkPriv=td(await decryptWithKey(ck,enc.niv,enc.nct));
-  const kkSk=td(await decryptWithKey(ck,enc.kiv,enc.kct));
-  return{nkPriv,kkSk};
-}
-
-function hasEncryptedSKs(){
-  return !!(localStorage.getItem(SK_ENC_KEY)&&localStorage.getItem(PIN_VER_KEY)&&localStorage.getItem(PIN_SALT_KEY));
-}
-
-// ── Biometric (WebAuthn PRF) ──
-// Store AES key in WebAuthn credential PRF extension if supported
-// Falls back gracefully to PIN-only if not supported
-let _bioCredId=null;
-
-async function bioSupported(){
-  try{
-    return !!(window.PublicKeyCredential&&
-      await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable());
-  }catch{return false;}
-}
-
-async function bioEnroll(pin){
-  if(!await bioSupported())return false;
-  try{
-    const cred=await navigator.credentials.create({publicKey:{
-      challenge:rnd(32),
-      rp:{name:'RELAY',id:location.hostname||'localhost'},
-      user:{id:rnd(16),name:'relay-user',displayName:'RELAY'},
-      pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
-      authenticatorSelection:{userVerification:'required',residentKey:'preferred'},
-      timeout:60000
-    }});
-    if(cred){
-      localStorage.setItem('rl6_bio_id',hex(new Uint8Array(cred.rawId)));
-      return true;
-    }
-  }catch{}
-  return false;
-}
-
-async function bioUnlock(){
-  const bioIdHex=localStorage.getItem('rl6_bio_id');
-  if(!bioIdHex)return null;
-  try{
-    const cred=await navigator.credentials.get({publicKey:{
-      challenge:rnd(32),
-      allowCredentials:[{type:'public-key',id:fhex(bioIdHex)}],
-      userVerification:'required',
-      timeout:60000
-    }});
-    // WebAuthn success = user verified — return stored PIN from sessionStorage
-    // PIN is kept in sessionStorage (RAM, cleared on tab close) after first unlock
-    return sessionStorage.getItem('rl6_session_pin');
-  }catch{}
-  return null;
-}
-
-// ── PIN UI ──
-let _pinBuf='';
-let _pinMode='unlock'; // 'unlock' | 'setup' | 'confirm'
-let _pinFirst='';
-let _pinResolve=null;
-
-function showPinScreen(mode){
-  _pinMode=mode;_pinBuf='';_pinFirst='';
-  updatePinDots();
-  document.getElementById('pinErr').textContent='';
-  document.getElementById('pinScreen').style.display='flex';
-  document.getElementById('loading').style.display='none';
-  if(mode==='setup'){
-    document.getElementById('pinLabel').textContent='Yeni PIN yaradın (6 rəqəm)';
-    document.getElementById('pinNewLabel').style.display='block';
-  } else {
-    document.getElementById('pinLabel').textContent='PIN-i daxil edin';
-    document.getElementById('pinNewLabel').style.display='none';
-  }
-  // Show biometric button if enrolled
-  const bioWrap=document.getElementById('pinBioWrap');
-  if(mode==='unlock'&&localStorage.getItem('rl6_bio_id')){
-    bioWrap.style.display='block';
-  } else {
-    bioWrap.style.display='none';
-  }
-}
-
-function hidePinScreen(){document.getElementById('pinScreen').style.display='none';}
-
-function updatePinDots(){
-  for(let i=0;i<6;i++){
-    const d=document.getElementById('pd'+i);
-    d.className='pin-dot'+(_pinBuf.length>i?' filled':'');
-  }
-}
-
-function pinKey(k){
-  if(_pinBuf.length>=6)return;
-  _pinBuf+=k;updatePinDots();
-  if(_pinBuf.length===6)setTimeout(pinSubmit,120);
-}
-
-function pinDel(){
-  if(!_pinBuf.length)return;
-  _pinBuf=_pinBuf.slice(0,-1);updatePinDots();
-}
-
-async function pinSubmit(){
-  const pin=_pinBuf;_pinBuf='';updatePinDots();
-  if(_pinMode==='setup'){
-    document.getElementById('pinLabel').textContent='PIN-i təkrarlayın';
-    document.getElementById('pinNewLabel').style.display='none';
-    _pinFirst=pin;_pinMode='confirm';return;
-  }
-  if(_pinMode==='confirm'){
-    if(pin!==_pinFirst){
-      document.getElementById('pinErr').textContent='PIN-lər uyğun gəlmir. Yenidən cəhd edin.';
-      flashDots('err');
-      setTimeout(()=>{
-        _pinMode='setup';_pinFirst='';
-        document.getElementById('pinLabel').textContent='Yeni PIN yaradın (6 rəqəm)';
-        document.getElementById('pinNewLabel').style.display='block';
-        document.getElementById('pinErr').textContent='';
-      },1200);
-      return;
-    }
-    // PIN confirmed — save and continue
-    sessionStorage.setItem('rl6_session_pin',pin);
-    hidePinScreen();
-    if(_pinResolve){_pinResolve(pin);_pinResolve=null;}
-    return;
-  }
-  // unlock mode
-  setLM('PIN yoxlanılır...');
-  document.getElementById('pinScreen').style.display='none';
-  document.getElementById('loading').style.display='flex';
-  try{
-    const{nkPriv,kkSk}=await loadEncryptedSKs(pin);
-    sessionStorage.setItem('rl6_session_pin',pin);
-    if(_pinResolve){_pinResolve({nkPriv,kkSk});_pinResolve=null;}
-  }catch{
-    document.getElementById('loading').style.display='none';
-    document.getElementById('pinScreen').style.display='flex';
-    document.getElementById('pinErr').textContent='Yanlış PIN. Yenidən cəhd edin.';
-    flashDots('err');
-  }
-}
-
-function flashDots(cls){
-  for(let i=0;i<6;i++)document.getElementById('pd'+i).className='pin-dot '+cls;
-  setTimeout(updatePinDots,600);
-}
-
-async function tryBiometric(){
-  const pin=await bioUnlock();
-  if(pin){
-    _pinBuf=pin;await pinSubmit();
-  } else {
-    document.getElementById('pinErr').textContent='Biometrika uğursuz. PIN daxil edin.';
-  }
-}
-
-// Get PIN — returns promise that resolves when user enters correct PIN
-function awaitPin(mode){
-  return new Promise(resolve=>{
-    _pinResolve=resolve;
-    showPinScreen(mode);
-  });
-}
-
-async function changePin(){
-  if(!confirm('PIN-i dəyişmək istəyirsiniz?'))return;
-  const oldPin=sessionStorage.getItem('rl6_session_pin');
-  if(!oldPin){alert('Əvvəlcə tətbiqi yenidən açın.');return;}
-  // Verify current PIN
-  try{await loadEncryptedSKs(oldPin);}catch{alert('Cari PIN yanlışdır.');return;}
-  // Ask new PIN
-  _pinResolve=null;
-  await awaitPin('setup');
-  const newPin=sessionStorage.getItem('rl6_session_pin');
-  if(!newPin||newPin===oldPin){alert('PIN dəyişdirilmədi.');return;}
-  await saveEncryptedSKs(newPin,NK.priv,KKkeys.sk);
-  alert('PIN uğurla dəyişdirildi ✓');
-}
-
-// ── Main boot ──
-async function boot(){
-  setLM('Başlanılır...');
-  document.getElementById('loading').style.display='flex';
-
-  let nkPriv,kkSk,isNew=false;
-
-  if(hasEncryptedSKs()){
-    // Try session PIN first (tab still open)
-    const sessionPin=sessionStorage.getItem('rl6_session_pin');
-    if(sessionPin){
-      try{
-        const r=await loadEncryptedSKs(sessionPin);
-        nkPriv=r.nkPriv;kkSk=r.kkSk;
-      }catch{sessionStorage.removeItem('rl6_session_pin');}
-    }
-    if(!nkPriv){
-      // Need PIN from user
-      document.getElementById('loading').style.display='none';
-      const r=await awaitPin('unlock');
-      nkPriv=r.nkPriv;kkSk=r.kkSk;
-      document.getElementById('loading').style.display='flex';
-    }
-  } else {
-    // First run — generate keys, ask for PIN
-    setLM('Açarlar yaradılır...');
-    const tmpNK=genNKP();
-    setLM('ML-KEM-768 (FIPS 203)...');
-    const tmpKK=kemKG();
-    // Save public parts unencrypted (needed for relay routing)
-    localStorage.setItem('rl5_nkey_pub',tmpNK.pub);
-    localStorage.setItem('rl5_kkey_pub',tmpKK.pk);
-    isNew=true;
-    document.getElementById('loading').style.display='none';
-    // Ask for new PIN
-    await awaitPin('setup');
-    const pin=sessionStorage.getItem('rl6_session_pin');
-    document.getElementById('loading').style.display='flex';
-    setLM('Açarlar şifrələnir...');
-    await saveEncryptedSKs(pin,tmpNK.priv,tmpKK.sk);
-    // Save full NK/KK (pub only) for display; priv/sk only in encrypted store
-    localStorage.setItem('rl5_nkey',JSON.stringify({pub:tmpNK.pub}));
-    localStorage.setItem('rl5_kkey',JSON.stringify({pk:tmpKK.pk}));
-    nkPriv=tmpNK.priv;kkSk=tmpKK.sk;
-    // Offer biometric enrollment
-    if(await bioSupported()){
-      setTimeout(()=>offerBioEnroll(pin),500);
-    }
-  }
-
-  // Reconstruct full key objects — pub from localStorage, priv/sk from PIN-decrypted store
-  setLM('Açarlar yüklənir...');
-  const nkPub=JSON.parse(localStorage.getItem('rl5_nkey')||'{}').pub||
-               localStorage.getItem('rl5_nkey_pub');
-  const kkPub=JSON.parse(localStorage.getItem('rl5_kkey')||'{}').pk||
-               localStorage.getItem('rl5_kkey_pub');
-  NK={priv:nkPriv,pub:nkPub};
-  KKkeys={pk:kkPub,sk:kkSk};
-
-  try{PEERS=JSON.parse(localStorage.getItem('rl5_peers'))||{};}catch{PEERS={};}
-  try{OQ=JSON.parse(localStorage.getItem('rl5_oq'))||[];}catch{OQ=[];}
-  // Load ML-DSA signing key — lazy: generate in background, never block boot
-  try{const dk=JSON.parse(localStorage.getItem('rl6_mldsa_key'));if(dk?.pk&&dk?.sk)MLDSAkeys=dk;}catch{}
-  // Load Key Transparency log
-  ktLoad();
-  setLM('Double Ratchet state...');
-  C=CRDT.load(NK.pub);
-  document.getElementById('myNostr').textContent=NK.pub;
-  document.getElementById('myKyber').textContent=KKkeys.pk.slice(0,64)+'...'+KKkeys.pk.slice(-16);
-  document.getElementById('topKey').textContent=NK.pub.slice(0,10)+'...';
-  document.getElementById('rpills').innerHTML=RELAYS.map(u=>`<div class="rp" id="rp${btoa(u).replace(/\W/g,'')}"><div class="rdot"></div>${rn(u)}</div>`).join('');
-  renderContacts();
-  document.getElementById('loading').style.display='none';
-  RELAYS.forEach(relConn);
-  setTimeout(startPadding,8000);
-  startSweep();
-  setTimeout(startHeartbeat,3000);
-  // Generate ML-DSA key in background — does NOT block app start
-  if(!MLDSAkeys){
-    setTimeout(async()=>{
-      try{
-        MLDSAkeys=mldsaKG();
-        localStorage.setItem('rl6_mldsa_key',JSON.stringify(MLDSAkeys));
-        console.log('ML-DSA-44 ready');
-      }catch(e){console.warn('ML-DSA keygen failed',e);}
-    },100);
-  }
-}
-
-async function offerBioEnroll(pin){
-  if(!confirm('Biometrika ilə (Face ID / Touch ID) açmaq istəyirsiniz?'))return;
-  const ok=await bioEnroll(pin);
-  if(ok)alert('Biometrika aktivləşdirildi ✓');
-  else alert('Biometrika dəstəklənmir.');
-}
-
-function setLM(m){document.getElementById('lmsg').textContent=m;}
-
-function addPeer(){
-  const inp=document.getElementById('peerInp');
-  let b;try{b=JSON.parse(inp.value.trim());}catch{alert('JSON formatı yanlışdır.\nNümunə: {"nostr":"ab12...","kyber":"04ab..."}');return;}
-  const nk=b.nostr?.toLowerCase().replace(/[^a-f0-9]/g,'');
-  if(!nk||nk.length!==64){alert('Nostr key 64 hex olmalıdır.');return;}
-  if(!b.kyber||b.kyber.length<100){alert('ML-KEM key çatışmır (kyber sahəsi).');return;}
-  if(nk===NK.pub){alert('Bu sənin öz key-indir!');return;}
-  if(PEERS[nk]){PEERS[nk].kyberPk=b.kyber;savePeers();inp.value='';renderContacts();renderPeers();return;}
-  PEERS[nk]={name:nk.slice(0,10),color:COLS[Object.keys(PEERS).length%COLS.length],kyberPk:b.kyber};
-  savePeers();inp.value='';resubAll();renderContacts();renderPeers();
-}
-function delPeer(k){if(!confirm('Silinsin?'))return;delete PEERS[k];savePeers();if(AP===k)AP=null;renderContacts();renderPeers();}
-function clearData(){
-  if(!confirm('Hər şey silinsin? PIN və bütün açarlar silinəcək!'))return;
-  Object.keys(PEERS).forEach(k=>{try{localStorage.removeItem(drKey(k));}catch{}});
-  stopHeartbeat();stopPadding();
-  sessionStorage.clear();
-  localStorage.clear();
-  location.reload();
-}
-
-async function sendTxt(){
-  const inp=document.getElementById('minp');const txt=inp.value.trim();if(!txt||!AP)return;
-  const peer=PEERS[AP];
-  if(!peer?.kyberPk){alert('Peer key yoxdur. Əvvəl ⚙ Ayarlar→Peer əlavə et vasitəsilə key bundle qur.');return;}
-  document.getElementById('sbtn').disabled=true;
-  const op=C.add('text',{text:txt},AP);renderMsgs();
-  // Clear input immediately so UI feels instant
-  inp.value='';inp.style.height='auto';
-  if(CONN.size>0){
-    try{
-      stampExpiry(op,AP);
-      await sendHybrid(AP,peer.kyberPk,op);
-    }catch(e){
-      console.error('Send failed:',e);
-      OQ.push({to:AP,op});saveOQ();
-      document.getElementById('obar').classList.add('on');
-    }
-  } else {OQ.push({to:AP,op});saveOQ();document.getElementById('obar').classList.add('on');}
-  iStat();
-  document.getElementById('sbtn').disabled=false;inp.focus();
-}
-async function flushOQ(){
-  if(!OQ.length)return;const q=[...OQ];OQ=[];saveOQ();
-  for(const item of q){
-    const p=PEERS[item.to];
-    if(p?.kyberPk){
-      try{await sendHybrid(item.to,p.kyberPk,item.op);}
-      catch{OQ.push(item);}
-    }
-  }
-  if(!OQ.length)document.getElementById('obar').classList.remove('on');iStat();
-}
-function onFile(e){const f=e.target.files[0];if(!f||!AP)return;e.target.value='';sendMedia(AP,f).catch(err=>alert('Göndərmə xətası: '+err.message));}
-
-// ── Navigation ──
-function goContacts(){sl('scC','act');sl('scChat','hr');sl('scCall','hr');sl('scS','hr');na('nbC');}
-function goSettings(){sl('scS','act');sl('scC','hl');sl('scChat','hr');sl('scCall','hr');na('nbS');renderPeers();;ktRender();}
-function openChat(pub){
-  AP=pub;const p=PEERS[pub];if(!p)return;
-  p.lastRead=Date.now();savePeers();
-  document.getElementById('chatName').textContent=p.name;
-  document.getElementById('chatName').style.color=p.color;
-  document.getElementById('chatKey').textContent=pub;
-  document.getElementById('sbtn').disabled=false;
-  sl('scChat','act');sl('scC','hl');sl('scCall','hr');sl('scS','hr');na('nbC');
-  // DC opens on-demand when media sent
-  updateFPBtn(pub);
-  updateTTLBtn();
-  renderContacts();renderMsgs();
-}
-function showCallScreen(pub,st,cls){
-  const p=PEERS[pub];const col=p?.color||'var(--pq)';
-  const av=document.getElementById('callAv');av.textContent=p?.name[0].toUpperCase()||'?';
-  av.style.cssText=`width:92px;height:92px;border-radius:22px;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:40px;margin-bottom:16px;position:relative;z-index:1;background:${col}22;color:${col}`;
-  document.getElementById('callNm').textContent=p?.name||pub.slice(0,10);
-  setCallSt(st,cls);sl('scCall','act');sl('scC','hl');sl('scChat','hl');sl('scS','hr');
-}
-function showIncoming(pub){
-  const p=PEERS[pub];const col=p?.color||'var(--pq)';
-  const av=document.getElementById('incAv');av.textContent=p?.name[0].toUpperCase()||'?';
-  av.style.cssText=`width:76px;height:76px;border-radius:18px;display:flex;align-items:center;justify-content:center;font-family:var(--disp);font-size:34px;margin:0 auto;background:${col}22;color:${col}`;
-  document.getElementById('incName').textContent=p?.name||pub.slice(0,10);document.getElementById('incName').style.color=col;
-  document.getElementById('incoming').classList.add('show');
-}
-function setCallSt(t,cls){const el=document.getElementById('callSt');el.textContent=t;el.className='call-st'+(cls?' '+cls:'');}
-function sl(id,cls){document.getElementById(id).className='screen '+cls;}
-function na(id){document.querySelectorAll('.nb').forEach(b=>b.classList.remove('act'));document.getElementById(id).classList.add('act');}
-function openImg(url){document.getElementById('imgVImg').src=url;document.getElementById('imgV').classList.add('show');}
-function closeImg(){document.getElementById('imgV').classList.remove('show');}
-
-// ── Render ──
-function getBlobUrl(payload){
-  if(!payload?._bytes)return null;
-  const blob=new Blob([payload._bytes],{type:payload.mimeType||'application/octet-stream'});
-  return URL.createObjectURL(blob);
-}
-
-// IDB-dən _bytes yüklə, sonra render et
-async function loadBytesIfNeeded(opId){
-  const op=C.ops.find(o=>o.id===opId);
-  if(!op||op.payload?._bytes)return;
-  const rec=await idbLoad(opId);
-  if(rec?.bytes){
-    op.payload._bytes=rec.bytes;
-    if(!op.payload.mimeType&&rec.mime)op.payload.mimeType=rec.mime;
-    renderMsgs();
-  }
-}
-
-function renderContacts(){
-  const el=document.getElementById('clist'),keys=Object.keys(PEERS);
-  if(!keys.length){el.innerHTML='<div class="no-c">Hələ kontakt yoxdur.<br><b>⚙</b> Ayarlardan peer əlavə et.</div>';return;}
-  el.innerHTML=keys.map(k=>{const p=PEERS[k];const msgs=C.chat(NK.pub,k);const last=msgs[msgs.length-1];const ur=msgs.filter(m=>m.from===k&&m.ts>(p.lastRead||0)).length;
-    const lt=last?(last.type==='text'?esc(last.payload?.text||'').slice(0,30):last.type==='image'?'🖼':last.type==='voice'?'🎙':'📎'):'';
-    return`<div class="ci">
-      <div class="av" style="background:${p.color}22;color:${p.color}">${p.name[0].toUpperCase()}</div>
-      <div class="ci-i" onclick="openChat('${k}')">
-        <div class="ci-n" style="color:${p.color}">${p.name}${!p.kyberPk?'<span style="color:var(--red);font-size:9px;margin-left:4px">⚠ key</span>':(!p.fpVerified?'<span style="color:rgba(255,180,0,.8);font-size:9px;margin-left:4px">⚠ təsdiqlə</span>':'<span style="color:var(--grn);font-size:9px;margin-left:4px">✓</span>')}</div>
-        <div class="ci-k">${k.slice(0,22)}...</div>
-        ${lt?`<div class="ci-last">${lt}</div>`:''}
-      </div>
-      <div class="ci-acts">${ur?`<div class="ubadge">${ur}</div>`:''}
-        <button class="ic-btn ic-chat" onclick="openChat('${k}')">💬</button>
-        <button class="ic-btn ic-call" onclick="startCall('${k}')">📞</button>
-      </div>
-    </div>`;}).join('');
-  showBadge();
-}
-
-function renderMsgs(){
-  const el=document.getElementById('msgs');if(!AP)return;
-  const ms=C.chat(NK.pub,AP);
-  if(!ms.length){el.innerHTML='<div class="empty-chat"><div class="eg">⬡</div><div class="et">RELAY</div><div class="es">Mətn · Foto · Səs · Zəng<br><b>ML-KEM-768 · TURN · Tam şifrəli</b></div></div>';return;}
-  el.innerHTML=ms.map(m=>{
-    const me=m.from===NK.pub;const p=PEERS[m.from];
-    const col=me?'var(--acc)':(p?.color||'var(--pq)');const nm=me?'Mən':(p?.name||m.from.slice(0,10));
-    const t=new Date(m.ts).toLocaleTimeString('az',{hour:'2-digit',minute:'2-digit'});
-    const inQ=OQ.some(q=>q.op?.id===m.id);
-    const foot=`<div class="mf"><span>${t}</span>${me?`<span class="${inQ?'pc':'okc'}">${inQ?'⏳':'✓✓'}</span><span style="font-size:8px;color:var(--dim)">${m.type==='text'?'relay':'TURN'}</span>`:'<span style="color:var(--pq);font-size:8px">PQ·E2E</span>'}</div>`;
-    const type=m.type||'text';let body='';
-    if(type==='text'){body=`<div class="mb">${esc(m.payload?.text||'')}</div>`;}
-    else if(type==='image'){
-      const prog=m.payload?._prog;
-      if(prog!==undefined&&prog<1){
-        body=`<div class="mb mb-prog"><div>${esc(m.payload?.name||'Foto')}</div><div class="pb-w"><div class="pb" style="width:${Math.round(prog*100)}%"></div></div><div class="pb-info"><span>${Math.round((m.payload?.size||0)/1024)}KB</span><span>${Math.round(prog*100)}%</span></div></div>`;
-      } else if(m.payload?._bytes){
-        const url=getBlobUrl(m.payload);
-        body=url?`<div class="mb" style="padding:4px"><img class="mb-img" src="${url}" onclick="openImg('${url}')" loading="lazy"/></div>`:`<div class="mb"><span style="color:var(--mut)">🖼 Foto</span></div>`;
-      } else if(m.payload?._failed){
-        body=`<div class="mb p2p-wait" style="color:var(--red)">❌ ${esc(m.payload?.name||'Foto')} — göndərilmədi</div>`;
-      } else {
-        // _bytes yoxdur — IDB-dən yüklə
-        loadBytesIfNeeded(m.id);
-        body=`<div class="mb p2p-wait">🖼 ${esc(m.payload?.name||'Foto')} — yüklənir...</div>`;
-      }
-    }
-    else if(type==='voice'){
-      const dur=m.payload?.duration||'';
-      const prog=m.payload?._prog;
-      const hasBytes=!!(m.payload?._bytes);
-      if(prog!==undefined&&prog<1){
-        body=`<div class="mb mb-prog"><div>🎙 Səs mesajı göndərilir...</div><div class="pb-w"><div class="pb" style="width:${Math.round(prog*100)}%"></div></div><div class="pb-info"><span>${Math.round((m.payload?.size||0)/1024)}KB</span><span>${Math.round(prog*100)}%</span></div></div>`;
-      } else {
-        if(!hasBytes)loadBytesIfNeeded(m.id);
-        body=`<div class="mb mb-voice">
-          <button class="v-play" onclick="playVoice('${m.id}')">${hasBytes?'▶':'⏳'}</button>
-          <div><div style="font-size:11px;color:var(--mut)">🎙 Səs mesajı</div><div class="v-dur">${dur?dur+'s':''}</div></div>
-        </div>`;
-      }
-    }
-    else if(type==='file'){
-      const prog=m.payload?._prog;
-      if(prog!==undefined&&prog<1){
-        body=`<div class="mb mb-prog"><div>📎 ${esc(m.payload?.name||'Fayl')}</div><div class="pb-w"><div class="pb" style="width:${Math.round(prog*100)}%"></div></div><div class="pb-info"><span>${Math.round((m.payload?.size||0)/1024)}KB</span><span>${Math.round(prog*100)}%</span></div></div>`;
-      } else {
-        const url=m.payload?._bytes?getBlobUrl(m.payload):null;
-        body=`<div class="mb mb-file"><span style="font-size:20px">📎</span><div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(m.payload?.name||'Fayl')}</div><div style="font-size:9px;color:var(--mut)">${Math.round((m.payload?.size||0)/1024)}KB</div></div>${url?`<a href="${url}" download="${m.payload?.name||'fayl'}" style="color:var(--acc2);font-size:20px;flex-shrink:0">⬇</a>`:''}</div>`;
-      }
-    }
-    return`<div class="mw ${me?'me':'them'}"><div class="mh"><span style="color:${col};font-weight:600">${nm}</span></div>${body}${foot}</div>`;
-  }).join('');
-  el.scrollTop=el.scrollHeight;
-}
-
-function renderPeers(){
-  const el=document.getElementById('peersDiv'),keys=Object.keys(PEERS);
-  document.getElementById('peerCount').textContent=keys.length;
-  if(!keys.length){el.innerHTML='<div style="font-size:11px;color:var(--dim)">Hələ peer yoxdur.</div>';return;}
-  el.innerHTML=keys.map(k=>{const p=PEERS[k];
-    const vbadge=p.fpVerified?'<span style="color:var(--grn);font-size:9px;margin-left:4px">✓ təsdiq</span>':'<span style="color:var(--red);font-size:9px;margin-left:4px;cursor:pointer" onclick="openFP(\''+k+'\')">⚠ təsdiqlə</span>';
-    return`<div class="pr-row"><div class="av" style="width:36px;height:36px;border-radius:8px;background:${p.color}22;color:${p.color};font-size:16px">${p.name[0].toUpperCase()}</div><div class="pr-i"><div class="pr-n" style="color:${p.color}">${p.name}${p.kyberPk?vbadge:' ⚠ key yox'}</div><div class="pr-k">${k.slice(0,24)}...</div></div><button class="del-btn" onclick="delPeer('${k}')">✕</button></div>`;}).join('');
-}
-
-function showBadge(){const tot=Object.keys(PEERS).reduce((s,k)=>{const p=PEERS[k];return s+C.chat(NK.pub,k).filter(m=>m.from===k&&m.ts>(p.lastRead||0)).length;},0);const b=document.getElementById('navBadge');if(tot>0){b.style.display='flex';b.textContent=tot;}else b.style.display='none';}
-function iStat(){} // simplified
-function setRp(url,st){const el=document.getElementById('rp'+btoa(url).replace(/\W/g,''));if(el)el.className=`rp ${st}`;if(st==='ok'&&OQ.length)setTimeout(flushOQ,300);}
-
-async function copyBundle(){
-  const bundle=JSON.stringify({nostr:NK.pub,kyber:KKkeys.pk});
-  const btn=document.getElementById('copyBtn');
-  try{await navigator.clipboard.writeText(bundle);}
-  catch{const ta=document.createElement('textarea');ta.value=bundle;ta.style.cssText='position:fixed;opacity:0;top:0;left:0';document.body.appendChild(ta);ta.select();ta.setSelectionRange(0,99999);document.execCommand('copy');document.body.removeChild(ta);}
-  btn.textContent='✓  Kopyalandı!';btn.classList.add('copy-ok');
-  setTimeout(()=>{btn.textContent='📋  Key Bundle Kopyala (JSON)';btn.classList.remove('copy-ok');},2000);
-}
-
-// ══════════════════════════════════════════════════════
-//  Sealed Sender
-//  Problem: relay sees ['p', toPub] tag → knows who talks to whom
-//  Solution: sender's identity encrypted INSIDE the payload
-//  Relay sees: anonymous event → ['p', toPub]
-//  Receiver decrypts → discovers real sender inside
-//  Even relay operator cannot link sender to recipient
-// ══════════════════════════════════════════════════════
-
-// Build a sealed-sender event:
-// Outer event: pubkey = ephemeral throwaway key (new each send)
-// Inner payload (encrypted): real sender nostrPub + kyberPk + actual content
-async function sealedSend(toPub,kyberPk,encContent,tags){
-  // Generate ephemeral Nostr keypair — used once, discarded
-  const ephNK=genNKP();
-  // Wrap real sender identity inside content (already encrypted by caller)
-  // Build event with ephemeral key — relay sees random pubkey
-  const ev=await buildEv(4,encContent,tags,ephNK.priv,ephNK.pub);
-  Object.values(WS).forEach(ws=>{if(ws.readyState===1)ws.send(JSON.stringify(['EVENT',ev]));});
-}
-
-// Sealed send with cover traffic
-async function sendWithCoverSealed(realToPub,realKyberPk,obj){
-  // Stamp deniable auth tag — HMAC from shared DR secret
-  // Both sender and receiver can compute this tag — no third-party proof possible
-  await stampDeniable(obj,realToPub);
-  // Inner payload includes sender identity so receiver knows who sent it
-  const innerObj={...obj,_sender:{nostr:NK.pub,kyber:KKkeys.pk}};
-  const enc=await pqEncPadded(realKyberPk,JSON.stringify(innerObj),realToPub);
-  const tags=[['p',realToPub]]; // NO kyber tag — reduces metadata
-  await sealedSend(realToPub,realKyberPk,enc,tags);
-  // Dummies to all other peers — also sealed
-  const others=Object.keys(PEERS).filter(p=>p!==realToPub&&PEERS[p]?.kyberPk);
-  others.forEach((p,i)=>setTimeout(()=>sendDummySealed(p),50+Math.random()*250));
-}
-
-async function sendDummySealed(toPub){
-  const peer=PEERS[toPub];if(!peer?.kyberPk)return;
-  const dummy={id:hex(rnd(16)),type:'__pad__',from:NK.pub,to:toPub,
-    lam:0,vc:{},payload:{},ts:Date.now(),_sender:{nostr:NK.pub,kyber:KKkeys.pk}};
-  await stampDeniable(dummy,toPub);
-  try{
-    const enc=await pqEncPadded(peer.kyberPk,JSON.stringify(dummy),toPub);
-    const tags=[['p',toPub]];
-    await sealedSend(toPub,peer.kyberPk,enc,tags);
-  }catch{}
-}
-
-// Nostr signaling (kind:25050) still uses real pubkey — needed for routing
-// Only kind:4 messages use sealed sender
-
-// ══════════════════════════════════════════════════════
-//  Disappearing Messages
-//  Per-peer TTL: 0=never, 3600=1h, 86400=24h, 604800=7d
-//  On send: store expiry timestamp in op
-//  On receive: check expiry, discard if expired
-//  Periodic sweep: delete expired from CRDT + localStorage
-//  Nostr kind:5: request relay to delete expired events
-// ══════════════════════════════════════════════════════
-
-const TTL_LABELS={0:'Heç vaxt',3600:'1 saat',86400:'24 saat',604800:'7 gün'};
-const TTL_KEY='rl6_ttl_'; // per-peer TTL setting
-
-function getTTL(peerPub){
-  const v=localStorage.getItem(TTL_KEY+peerPub);
-  return v!==null?parseInt(v):0;
-}
-function saveTTL(peerPub,secs){
-  if(secs===0)localStorage.removeItem(TTL_KEY+peerPub);
-  else localStorage.setItem(TTL_KEY+peerPub,String(secs));
-}
-
-// Add expiry to outgoing op
-function stampExpiry(op,peerPub){
-  const ttl=getTTL(peerPub);
-  if(ttl>0)op._exp=Date.now()+ttl*1000;
-  return op;
-}
-
-// Check if op is expired
-function isExpired(op){
-  return op._exp&&Date.now()>op._exp;
-}
-
-// Sweep: remove expired messages from CRDT, request relay deletion
-async function sweepExpired(){
-  if(!C||!NK)return;
-  const expired=C.ops.filter(o=>isExpired(o));
-  if(!expired.length)return;
-  C.ops=C.ops.filter(o=>!isExpired(o));
-  C._save();
-  renderMsgs();renderContacts();
-  // Send kind:5 deletion requests to relay for expired events
-  // (relay may or may not honor, but we request)
-  for(const op of expired){
-    if(op._nostrId){
-      try{
-        const delEv=await buildEv(5,'',
-          [['e',op._nostrId],['k','4']],NK.priv,NK.pub);
-        Object.values(WS).forEach(ws=>{
-          if(ws.readyState===1)ws.send(JSON.stringify(['EVENT',delEv]));
-        });
-      }catch{}
-    }
-  }
-}
-
-// Run sweep every 30 seconds
-let _sweepTimer=null;
-function startSweep(){
-  if(_sweepTimer)return;
-  _sweepTimer=setInterval(sweepExpired,30000);
-  sweepExpired(); // immediate first pass
-}
-
-// TTL modal UI
-function openTTL(){
-  if(!AP)return;
-  const cur=getTTL(AP);
-  const peer=PEERS[AP];
-  document.getElementById('ttlSub').textContent=
-    (peer?.name||'Peer')+' ilə söhbət üçün mesaj ömrünü seçin.';
-  // Mark current selection
-  [0,3600,86400,604800].forEach(v=>{
-    const el=document.getElementById('ttlSel'+v);
-    if(el)el.textContent=v===cur?'✓':'';
-  });
-  document.getElementById('ttlModal').classList.add('show');
-}
-
-function closeTTL(){document.getElementById('ttlModal').classList.remove('show');}
-
-function setTTL(secs){
-  if(!AP)return;
-  saveTTL(AP,secs);
-  updateTTLBtn();
-  closeTTL();
-  renderMsgs();
-}
-
-function updateTTLBtn(){
-  const btn=document.getElementById('ttlBtn');if(!btn||!AP)return;
-  const ttl=getTTL(AP);
-  if(ttl>0){
-    btn.className='ttl-btn on';
-    btn.title='Silinən mesajlar: '+TTL_LABELS[ttl];
-    document.getElementById('dmBar').className='dm-bar on';
-    document.getElementById('dmBar').textContent=
-      '⏱ Mesajlar '+TTL_LABELS[ttl]+' sonra silinəcək';
-  } else {
-    btn.className='ttl-btn';
-    btn.title='Silinən mesajlar';
-    document.getElementById('dmBar').className='dm-bar';
-  }
-}
-
-// ══════════════════════════════════════════════════════
-//  Key Fingerprint — MITM detection (Signal "safety number" style)
-//  Fingerprint = SHA3-256(myNostr|myKyber|peerNostr|peerKyber)
-//  Both parties compute same hash if no MITM.
-//  Displayed as 12 emojis + hex — user verifies out-of-band.
-// ══════════════════════════════════════════════════════
-
-// 64 visually distinct emojis — no ambiguous lookalikes
-const FP_EMOJIS=['🔥','🌊','⚡','🌙','🦋','🐉','🌺','🎯','🔮','🌈',
-  '🦅','🐬','🌸','⭐','🎪','🦊','🌴','🎭','🔱','🦁',
-  '🌋','🐙','🎨','🏔','🦄','🌊','🎸','🦜','🌙','🔮',
-  '🎯','🦋','⚡','🌺','🐉','🔥','🎪','🦅','🐬','🌸',
-  '🎭','🔱','🦁','🌋','🐙','🎨','🏔','🦄','🎸','🦜',
-  '🍄','🦩','🎲','🌿','🔭','🦚','🎠','🌠','🦋','🔑',
-  '🌊','⚗️','🦈','🎡'];
-
-async function computeFP(peerPub){
-  const peer=PEERS[peerPub];if(!peer?.kyberPk)return null;
-  // Canonical order: always myNostr < peerNostr lexicographically
-  // so both sides get same result regardless of who computes
-  const [a,b]=NK.pub<peerPub
-    ?[NK.pub+KKkeys.pk, peerPub+peer.kyberPk]
-    :[peerPub+peer.kyberPk, NK.pub+KKkeys.pk];
-  const raw=te(a+'|'+b);
-  const hash=SHA3_256(raw); // 32 bytes
-  return hash;
-}
-
-function fpToEmojis(hash){
-  // 12 emojis: each emoji = hash[i] % 64
-  return Array.from({length:12},(_,i)=>FP_EMOJIS[hash[i]%FP_EMOJIS.length]);
-}
-
-function fpToHex(hash){
-  // Show as 8 groups of 4 hex chars for readability
-  const h=hex(hash);
-  return h.match(/.{1,8}/g).join(' ');
-}
-
-let _fpCurrentPeer=null;
-
-async function openFP(peerPub){
-  if(!peerPub||!PEERS[peerPub])return;
-  _fpCurrentPeer=peerPub;
-  const peer=PEERS[peerPub];
-  const hash=await computeFP(peerPub);
-  if(!hash)return;
-  const emojis=fpToEmojis(hash);
-  const hexStr=fpToHex(hash);
-  const verified=peer.fpVerified===hexStr;
-
-  // Render emojis
-  document.getElementById('fpEmojis').innerHTML=
-    emojis.map(e=>`<div class="fp-em">${e}</div>`).join('');
-  document.getElementById('fpHex').textContent=hexStr;
-
-  // Status
-  const statusEl=document.getElementById('fpStatus');
-  if(verified){
-    statusEl.innerHTML=`<div class="fp-ok">✓ Bu peer təsdiq edilib. Bağlantı təhlükəsizdir.</div>`;
-    document.getElementById('fpVerifyBtn').textContent='✓ Təsdiqlənib';
-    document.getElementById('fpVerifyBtn').style.background='var(--b2)';
-    document.getElementById('fpVerifyBtn').style.color='var(--mut)';
-  } else {
-    statusEl.innerHTML=`<div class="fp-warn">⚠ Hələ təsdiq edilməyib. Peer ilə müqayisə et!</div>`;
-    document.getElementById('fpVerifyBtn').textContent='✓ Təsdiq Et';
-    document.getElementById('fpVerifyBtn').style.background='var(--grn)';
-    document.getElementById('fpVerifyBtn').style.color='#000';
-  }
-
-  document.getElementById('fpSubtitle').innerHTML=
-    `<b>${peer.name}</b> ilə aşağıdakı emojiləri başqa kanal vasitəsilə müqayisə edin.<br>Hamısı eynidir? Bağlantı təhlükəsizdir.`;
-  document.getElementById('fpModal').classList.add('show');
-}
-
-function closeFP(){document.getElementById('fpModal').classList.remove('show');_fpCurrentPeer=null;}
-
-async function confirmVerify(){
-  if(!_fpCurrentPeer)return;
-  const peer=PEERS[_fpCurrentPeer];if(!peer)return;
-  const hash=await computeFP(_fpCurrentPeer);if(!hash)return;
-  peer.fpVerified=fpToHex(hash);
-  savePeers();
-  updateFPBtn(_fpCurrentPeer);
-  closeFP();
-  renderContacts();
-}
-
-function updateFPBtn(peerPub){
-  const btn=document.getElementById('fpBtn');if(!btn)return;
-  const peer=PEERS[peerPub];if(!peer)return;
-  if(!peer.kyberPk){btn.className='fp-btn';btn.title='Key yoxdur';return;}
-  if(peer.fpVerified){
-    btn.className='fp-btn verified';btn.textContent='✓';btn.title='Açar təsdiq edilib';
-  } else {
-    btn.className='fp-btn unverified';btn.textContent='⚠';btn.title='Açar TƏSDİQLƏNMƏYİB — klikla!';
-  }
-}
-
-document.getElementById('minp').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey&&window.innerWidth>600){e.preventDefault();sendTxt();}});
-function rsz(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,120)+'px';}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');}
-function rn(u){return u.split('/')[2].split('.').slice(-2).join('.');}
-
-boot();
-</script>
+<script type="module" src="src/app.js"></script>
 </body>
 </html>

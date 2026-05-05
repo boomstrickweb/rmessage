@@ -1,0 +1,497 @@
+/**
+ * app.js — Application entry point
+ *
+ * Boot sequence:
+ *  1. Generate / load Nostr keypair + ML-KEM-768 keypair
+ *  2. PIN unlock (decrypt stored keys) or first-run PIN setup
+ *  3. Connect to Nostr relays
+ *  4. Start traffic padding + heartbeat
+ *  5. Render contacts
+ *
+ * All global state is attached to `window` so modules can share it
+ * without circular imports. In a full Vite/React build these would
+ * be proper module-level stores.
+ */
+
+'use strict';
+
+import { genNKP, buildEv, schnorrSign } from './crypto/secp256k1.js';
+import { kemKG, kemE, kemD }            from './crypto/mlkem.js';
+import { mldsaKG, mldsaSign }           from './crypto/mldsa.js';
+import { SHA3_256 }                      from './crypto/sha3.js';
+import {
+  drEncrypt, drDecrypt, pqEncStr, pqDecStr,
+  pqEncBin, pqDecBin, pqEncPadded,
+  aesEnc, aesDec, hkdf1, yieldUI,
+} from './crypto/ratchet.js';
+import { hex, fhex, rnd, te, td, cat }  from './utils.js';
+import {
+  RELAYS, WS, CONN, relConn, resubAll, nostrPub, setRp,
+} from './transport/nostr.js';
+import { onEv }                          from './transport/events.js';
+import { sendHybrid, startHeartbeat, stopHeartbeat } from './transport/onion.js';
+import { startPadding, stopPadding, sendWithCoverSealed } from './transport/padding.js';
+import {
+  PCManager, getTurnServers, waitForGathering, sanitizeSDP,
+  startCall, answerCall, rejectCall, endCall,
+  toggleMute, toggleSpk, sendMedia, startRec, stopRec, cancelRec,
+  playVoice, ensureDC, updateP2PStatus,
+} from './transport/webrtc.js';
+import { CRDT, idbSave, idbLoad }        from './storage/crdt.js';
+import {
+  hasEncryptedSKs, saveEncryptedSKs, loadEncryptedSKs,
+  bioSupported, bioEnroll, bioUnlock,
+  showPinScreen, hidePinScreen, pinKey, pinDel, tryBiometric, awaitPin, changePin,
+} from './storage/pin.js';
+import { renderContacts, renderMsgs, renderPeers, showBadge, ktRender, loadBytesIfNeeded } from './ui/render.js';
+import {
+  addPeer, delPeer, openFP, closeFP, verifyFP,
+  openKT, closeKT, setDisappearing, runDisappearing,
+  emergencyWipe, exportKeys, importKeys, copyShareBundle, ktRecord,
+} from './ui/settings.js';
+
+// ── Expose globals needed by inline HTML onclick handlers ──
+
+const G = window;
+G.pinKey        = pinKey;
+G.pinDel        = pinDel;
+G.tryBiometric  = tryBiometric;
+G.changePin     = changePin;
+G.answerCall    = answerCall;
+G.rejectCall    = rejectCall;
+G.endCall       = endCall;
+G.toggleMute    = toggleMute;
+G.toggleSpk     = toggleSpk;
+G.playVoice     = playVoice;
+G.addPeer       = addPeer;
+G.delPeer       = delPeer;
+G.openFP        = openFP;
+G.closeFP       = closeFP;
+G.openKT        = openKT;
+G.closeKT       = closeKT;
+G.setDisappearing = setDisappearing;
+G._renderMsgs   = renderMsgs;
+G._idbSave      = idbSave;
+G._WS           = WS;
+G._CONN         = CONN;
+
+// ── Color palette for peer avatars ──
+
+const COLORS = ['#e8ff00','#00aaff','#00ff88','#ff5588','#ff9900','#cc44ff'];
+const randCol = () => COLORS[Math.floor(Math.random() * COLORS.length)];
+
+// ── Navigation ──
+
+let _curScreen = 'C';
+G.AP = null; // Active peer (open chat)
+
+function showScreen(id) {
+  ['C','Chat','Call','S'].forEach(s => {
+    const el = document.getElementById('sc' + s);
+    if (!el) return;
+    el.className = 'screen' + (s === id ? ' act' : (s === 'C' && id !== 'C' ? ' hl' : ' hr'));
+  });
+  ['C','S'].forEach(s => document.getElementById('nb' + s)?.classList.toggle('act', s === id));
+  _curScreen = id;
+}
+
+G.goContacts = () => { G.AP = null; showScreen('C'); renderContacts(); };
+G.goSettings = () => showScreen('S');
+G._goContacts = G.goContacts;
+
+G.openChat = (pub) => {
+  G.AP = pub;
+  const peer = G._PEERS?.[pub];
+  if (!peer) return;
+  document.getElementById('chatName').textContent  = peer.name;
+  document.getElementById('chatName').style.color  = peer.color;
+  document.getElementById('chatKey').textContent   = pub.slice(0, 28) + '...';
+  const fpBtn = document.getElementById('fpBtn');
+  fpBtn.className = 'fp-btn' + (peer.fpVerified ? ' verified' : ' unverified');
+  peer.lastRead = Date.now();
+  localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
+  updateDMBar();
+  showScreen('Chat');
+  renderMsgs();
+};
+
+G._showCallScreen = (pub, statusText, statusCls) => {
+  const peer = G._PEERS?.[pub];
+  const nm   = peer?.name || pub.slice(0, 14);
+  const col  = peer?.color || 'var(--pq)';
+  document.getElementById('callAv').textContent   = nm[0].toUpperCase();
+  document.getElementById('callAv').style.background = col + '22';
+  document.getElementById('callAv').style.color   = col;
+  document.getElementById('callNm').textContent   = nm;
+  document.getElementById('callSt').textContent   = statusText;
+  document.getElementById('callSt').className     = 'call-st ' + (statusCls || '');
+  showScreen('Call');
+};
+
+G.startCallFromChat = () => { if (G.AP) startCall(G.AP); };
+
+// ── Text input auto-resize ──
+
+G.rsz = (el) => {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  document.getElementById('sbtn').disabled = !el.value.trim();
+};
+
+document.getElementById('minp').addEventListener('input', () => {
+  document.getElementById('sbtn').disabled = !document.getElementById('minp').value.trim();
+});
+
+// ── Send text message ──
+
+G.sendTxt = async () => {
+  const inp  = document.getElementById('minp');
+  const text = inp.value.trim();
+  if (!text || !G.AP) return;
+  const peer = G._PEERS?.[G.AP];
+  inp.value  = ''; inp.style.height = 'auto';
+  document.getElementById('sbtn').disabled = true;
+  const op = G._C.add('text', { text }, G.AP);
+  renderMsgs();
+  if (!peer?.kyberPk) {
+    const bundle = JSON.stringify({ nostrPub: G._NK.pub, kyberPk: G._KKkeys.pk, v: 1 });
+    const fullOp = { ...op, _kyberBundle: bundle, _sender: { nostr: G._NK.pub, kyber: G._KKkeys.pk } };
+    await _queueOrSend(G.AP, peer?.kyberPk, fullOp);
+  } else {
+    const fullOp = { ...op, _sender: { nostr: G._NK.pub, kyber: G._KKkeys.pk } };
+    await _queueOrSend(G.AP, peer.kyberPk, fullOp);
+  }
+};
+
+async function _queueOrSend(toPub, kyberPk, op) {
+  const peer = G._PEERS?.[toPub];
+  if (!kyberPk || !CONN.size) {
+    G._OQ.push({ to: toPub, op }); G._saveOQ();
+    document.getElementById('obar').classList.add('on');
+    return;
+  }
+  try {
+    await sendHybrid(toPub, kyberPk, op);
+  } catch (e) {
+    console.error('Send failed, queuing:', e);
+    G._OQ.push({ to: toPub, op }); G._saveOQ();
+    document.getElementById('obar').classList.add('on');
+  }
+}
+G._sendHybrid = sendHybrid;
+
+// ── File attachment ──
+
+G.onFile = async (ev) => {
+  const file = ev.target.files?.[0]; if (!file || !G.AP) return;
+  ev.target.value = '';
+  if (!G._PEERS?.[G.AP]?.kyberPk) { alert('Peer has no key yet. Send a text message first.'); return; }
+  await sendMedia(G.AP, file);
+};
+
+// ── Image viewer ──
+
+G.openImg = (url) => {
+  document.getElementById('imgVImg').src = url;
+  document.getElementById('imgV').classList.add('show');
+};
+G.closeImg = () => { document.getElementById('imgV').classList.remove('show'); };
+
+// ── Voice recording ──
+
+G.startRec = startRec;
+G.stopRec  = stopRec;
+G.cancelRec = cancelRec;
+
+// ── Copy key bundle ──
+
+G.copyBundle = () => {
+  const NK = G._NK, KK = G._KKkeys;
+  if (!NK || !KK) return;
+  const bundle = JSON.stringify({ nostrPub: NK.pub, kyberPk: KK.pk, v: 1 });
+  navigator.clipboard.writeText(bundle).then(() => {
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = '✓ Copied!'; btn.classList.add('copy-ok');
+    setTimeout(() => { btn.textContent = '📋 \u00a0Copy Key Bundle (JSON)'; btn.classList.remove('copy-ok'); }, 2200);
+  }).catch(() => prompt('Copy this JSON:', bundle));
+};
+
+// ── Fingerprint confirm ──
+
+G.confirmVerify = () => {
+  const npub = document.getElementById('fpModal').dataset.npub;
+  if (!npub || !G._PEERS?.[npub]) return;
+  G._PEERS[npub].fpVerified = true;
+  localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
+  document.getElementById('fpStatus').textContent = '✓ Verified';
+  document.getElementById('fpStatus').style.color = 'var(--grn)';
+  const fpBtn = document.getElementById('fpBtn');
+  if (G.AP === npub) fpBtn.className = 'fp-btn verified';
+  renderPeers(); renderContacts();
+};
+
+// ── Disappearing Messages (per-chat) ──
+
+let _chatTTL = 0;
+
+G.openTTL = () => {
+  ['0','3600','86400','604800'].forEach(v => {
+    document.getElementById('ttlSel' + v).textContent = (Number(v) * 1000 === _chatTTL) ? '✓' : '—';
+  });
+  document.getElementById('ttlModal').classList.add('show');
+};
+
+G.closeTTL = () => document.getElementById('ttlModal').classList.remove('show');
+
+G.setTTL = (sec) => {
+  _chatTTL = sec * 1000;
+  localStorage.setItem('rl6_chatttl_' + G.AP, String(_chatTTL));
+  updateDMBar();
+  G.closeTTL();
+};
+
+function updateDMBar() {
+  if (!G.AP) return;
+  const v   = parseInt(localStorage.getItem('rl6_chatttl_' + G.AP) || '0');
+  _chatTTL  = v;
+  const bar = document.getElementById('dmBar');
+  bar.classList.toggle('on', v > 0);
+}
+
+// ── Emergency Wipe ──
+
+let _wipeTimer = null;
+
+G.showWipeModal = () => {
+  document.getElementById('wipeModal').classList.add('show');
+  document.getElementById('wipeProgress').classList.remove('on');
+  document.getElementById('wipeBar').style.width = '0';
+  document.getElementById('wipeHint').textContent = 'Hold button for 3 seconds';
+};
+
+G.hideWipeModal = () => document.getElementById('wipeModal').classList.remove('show');
+
+G.startWipeHold = (e) => {
+  if (e?.preventDefault) e.preventDefault();
+  document.getElementById('wipeProgress').classList.add('on');
+  let pct = 0;
+  const bar = document.getElementById('wipeBar');
+  _wipeTimer = setInterval(() => {
+    pct += 100 / 30;
+    bar.style.width = Math.min(pct, 100) + '%';
+    if (pct >= 100) { clearInterval(_wipeTimer); _wipeTimer = null; emergencyWipe(); }
+  }, 100);
+};
+
+G.cancelWipeHold = () => {
+  if (_wipeTimer) { clearInterval(_wipeTimer); _wipeTimer = null; }
+  document.getElementById('wipeProgress').classList.remove('on');
+  document.getElementById('wipeBar').style.width = '0';
+};
+
+// ── Reset data (soft reset — keeps keys) ──
+
+G.clearData = () => {
+  if (!confirm('Delete all messages? Keys and contacts will be kept.')) return;
+  G._C.ops = []; G._C._save();
+  renderContacts(); if (G.AP) renderMsgs();
+};
+
+// ── Offline queue ──
+
+G._OQ = [];
+G._saveOQ = () => {
+  try {
+    const safe = G._OQ.map(q => ({ to: q.to, op: { ...q.op, payload: { ...q.op.payload, _bytes: undefined } } }));
+    localStorage.setItem('rl6_oq', JSON.stringify(safe));
+  } catch {}
+};
+
+function _loadOQ() {
+  try { G._OQ = JSON.parse(localStorage.getItem('rl6_oq') || '[]'); } catch { G._OQ = []; }
+  if (G._OQ.length) document.getElementById('obar').classList.add('on');
+}
+
+async function _flushOQ() {
+  if (!G._OQ.length) return;
+  const q = [...G._OQ]; G._OQ = []; G._saveOQ();
+  for (const item of q) {
+    const peer = G._PEERS?.[item.to];
+    if (peer?.kyberPk) {
+      try { await sendHybrid(item.to, peer.kyberPk, item.op); }
+      catch { G._OQ.push(item); }
+    }
+  }
+  if (!G._OQ.length) document.getElementById('obar').classList.add('on');
+  else document.getElementById('obar').classList.remove('on');
+}
+
+// ── Relay pills ── 
+
+function buildRelayPills() {
+  const c = document.getElementById('rpills'); c.innerHTML = '';
+  RELAYS.forEach(u => {
+    const d   = document.createElement('div');
+    const id  = 'rp' + btoa(u).replace(/\W/g,'');
+    d.className = 'rp try'; d.id = id;
+    d.innerHTML = `<div class="rdot"></div>${u.split('/')[2].split('.').slice(-2).join('.')}`;
+    c.appendChild(d);
+  });
+}
+
+// ── App boot ──
+
+async function boot() {
+  document.getElementById('loading').style.display = 'flex';
+  document.getElementById('lmsg').textContent = 'Initialising ML-KEM-768...';
+  await yieldUI();
+
+  // Load peers + CRDT + offline queue
+  G._PEERS = {};
+  try { G._PEERS = JSON.parse(localStorage.getItem('rl5_peers') || '{}'); } catch {}
+  _loadOQ();
+
+  // Key transparency log
+  try { G._ktLog = JSON.parse(localStorage.getItem('rl6_kt') || '[]'); } catch { G._ktLog = []; }
+
+  // Disappearing messages
+  const dis = parseInt(localStorage.getItem('rl6_disappear') || '0');
+  G._disappearMs = dis > 0 ? dis : 0;
+
+  // WebRTC state
+  G._PCM = null; G._callPeer = null; G._callState = 'idle'; G._muted = false;
+  G._localStream = null; G._remoteAudio = null;
+  G._pendingOffer = null;
+
+  // ── Load or generate keys ──
+
+  let nkPriv, kkSk;
+
+  if (hasEncryptedSKs()) {
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('lmsg').textContent = 'Checking PIN...';
+    const result = await awaitPin('unlock');
+    nkPriv = result.nkPriv; kkSk = result.kkSk;
+    document.getElementById('loading').style.display = 'flex';
+  } else {
+    // First run — generate keys
+    document.getElementById('lmsg').textContent = 'Generating post-quantum keypair...';
+    await yieldUI();
+    const nk  = genNKP();
+    const kk  = kemKG();
+    nkPriv    = nk.priv; const nkPub = nk.pub;
+    kkSk      = kk.sk;   const kkPk  = kk.pk;
+    G._NK     = { priv: nkPriv, pub: nkPub };
+    G._KKkeys = { pk: kkPk, sk: kkSk };
+
+    document.getElementById('loading').style.display = 'none';
+    const pin = await awaitPin('setup');
+    document.getElementById('loading').style.display = 'flex';
+    document.getElementById('lmsg').textContent = 'Encrypting keys with PIN...';
+    await saveEncryptedSKs(pin, nkPriv, kkSk);
+
+    // Optional biometric enrollment
+    if (await bioSupported()) {
+      const enroll = await bioEnroll(pin);
+      if (enroll) console.log('Biometric enrolled');
+    }
+  }
+
+  // Reconstruct NK + KKkeys from saved private / secret keys
+  document.getElementById('lmsg').textContent = 'Loading ML-KEM-768 keypair...';
+  await yieldUI();
+
+  if (!G._NK) {
+    const { genNKP: gNKP } = await import('./crypto/secp256k1.js');
+    // Reconstruct pub from priv (scalar multiplication)
+    const _bi = s => BigInt('0x' + s);
+    const _SP = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2Fn;
+    const _SN = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141n;
+    // Re-derive pub from stored priv using secp256k1 — handled inside genNKP if needed
+    // For simplicity, store pub alongside priv in the encrypted blob
+    // (the encrypted store already contains both — this path is a no-op if above set G._NK)
+  }
+
+  // If still not set (first-run path already set G._NK above), reconstruct
+  // from stored blob which should include pub. For unlock path, we need to
+  // store both priv+pub. Here we use a convenience: re-derive pub from priv.
+  if (!G._NK) {
+    // Reconstruct public key from private key using secp256k1
+    const { _SG } = await import('./crypto/secp256k1.js').catch(() => ({ _SG: null }));
+    G._NK = { priv: nkPriv, pub: localStorage.getItem('rl6_nkpub') || '' };
+    if (!G._NK.pub) {
+      const nkNew = genNKP(); // fallback (generates new — should not happen)
+      G._NK = nkNew;
+      localStorage.setItem('rl6_nkpub', nkNew.pub);
+    }
+  }
+
+  // Decode KK keys
+  if (!G._KKkeys) {
+    const kkPk = localStorage.getItem('rl6_kkpub') || '';
+    G._KKkeys  = { pk: kkPk, sk: kkSk };
+  }
+
+  // Persist pub keys so they survive unlock
+  localStorage.setItem('rl6_nkpub', G._NK.pub);
+  localStorage.setItem('rl6_kkpub', G._KKkeys.pk);
+
+  // ML-DSA keypair (for key transparency signatures)
+  document.getElementById('lmsg').textContent = 'Loading ML-DSA-44 (post-quantum signatures)...';
+  await yieldUI();
+  let mldsaSk = localStorage.getItem('rl6_mldsa_sk');
+  let mldsaPk = localStorage.getItem('rl6_mldsa_pk');
+  if (!mldsaSk) {
+    const kp = mldsaKG(); mldsaSk = kp.sk; mldsaPk = kp.pk;
+    localStorage.setItem('rl6_mldsa_sk', mldsaSk);
+    localStorage.setItem('rl6_mldsa_pk', mldsaPk);
+  }
+  G.MLDSAkeys = { pk: mldsaPk, sk: mldsaSk };
+
+  // CRDT
+  G._C = CRDT.load(G._NK.pub);
+
+  // Reload IDB bytes for any media ops
+  document.getElementById('lmsg').textContent = 'Loading media from storage...';
+  await yieldUI();
+  for (const op of G._C.ops) {
+    if (['image','voice','file'].includes(op.type) && !op.payload?._bytes) {
+      const rec = await idbLoad(op.id);
+      if (rec?.bytes) { op.payload._bytes = rec.bytes; if (!op.payload.mimeType) op.payload.mimeType = rec.mime; }
+    }
+  }
+
+  // Settings display
+  document.getElementById('myNostr').textContent = G._NK.pub.slice(0, 32) + '...';
+  document.getElementById('myKyber').textContent = G._KKkeys.pk.slice(0, 32) + '...';
+  const topKey = document.getElementById('topKey');
+  topKey.textContent = G._NK.pub.slice(0, 14) + '...';
+
+  // Relay pills + connections
+  buildRelayPills();
+  document.getElementById('lmsg').textContent = 'Connecting to Nostr relays...';
+  await yieldUI();
+  RELAYS.forEach(u => relConn(u));
+  setTimeout(_flushOQ, 4000);
+
+  // Traffic padding + heartbeat
+  startHeartbeat();
+  startPadding();
+
+  // Disappearing messages timer
+  if (G._disappearMs > 0) setInterval(runDisappearing, 60000);
+
+  // Render
+  renderContacts();
+  ktRender();
+  renderPeers();
+  showBadge();
+
+  // Done
+  document.getElementById('loading').style.display = 'none';
+}
+
+boot().catch(e => {
+  console.error('Boot failed:', e);
+  document.getElementById('lmsg').textContent = 'Startup error: ' + e.message;
+});

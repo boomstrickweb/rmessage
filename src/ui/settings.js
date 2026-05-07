@@ -62,32 +62,35 @@ function buildSettings() {
 }
 
 // ── Add peer ──
+// Reads from peerInp textarea (JSON: {nostr, kyber}) — matches the HTML in index.html
 
 export function addPeer() {
-  const nb = document.getElementById('addNpub');
-  const cb = document.getElementById('addKpub');
-  const nn = document.getElementById('addName');
-  const npub = nb.value.trim(), kpub = cb.value.trim(), name = nn.value.trim();
-  if (!npub || !kpub || !name) { alert('Fill in all fields.'); return; }
-  if (!/^[0-9a-f]{64}$/i.test(npub)) { alert('Nostr pub must be 64 hex chars.'); return; }
-  if (!/^[0-9a-f]{768,}$/i.test(kpub)) { alert('ML-KEM pub key is too short.'); return; }
+  const inp = document.getElementById('peerInp');
+  let b;
+  try { b = JSON.parse(inp.value.trim()); }
+  catch { alert('Invalid JSON format.\nExample: {"nostr":"ab12...","kyber":"04ab..."}'); return; }
+  const nk = (b.nostr || b.nostrPub || '').toLowerCase().replace(/[^a-f0-9]/g, '');
+  if (!nk || nk.length !== 64) { alert('Nostr key must be 64 hex characters.'); return; }
+  if (!b.kyber && !b.kyberPk) { alert('ML-KEM key missing (kyber field).'); return; }
+  const kpub = b.kyber || b.kyberPk;
+  if (kpub.length < 100) { alert('ML-KEM key is too short.'); return; }
+  if (nk === window._NK?.pub) { alert('This is your own key!'); return; }
   const peers = window._PEERS;
-  if (!peers[npub]) {
-    peers[npub] = { name, kyberPk: kpub, color: randCol(), lastRead: 0 };
-    ktRecord(npub, kpub, 'key_first');
+  const COLS_LOCAL = ['#e8ff00','#00aaff','#00ff88','#ff5588','#ff9900','#cc44ff'];
+  if (!peers[nk]) {
+    peers[nk] = { name: nk.slice(0, 10), kyberPk: kpub, color: COLS_LOCAL[Object.keys(peers).length % COLS_LOCAL.length], lastRead: 0 };
+    ktRecord(nk, kpub, 'key_first');
   } else {
-    if (peers[npub].kyberPk && peers[npub].kyberPk !== kpub) {
-      const warn = `⚠ Key change detected for ${peers[npub].name}!\n\nOld: ${peers[npub].kyberPk.slice(0, 24)}\nNew: ${kpub.slice(0, 24)}\n\nAccept new key?`;
+    if (peers[nk].kyberPk && peers[nk].kyberPk !== kpub) {
+      const warn = `⚠ Key change detected for ${peers[nk].name}!\n\nOld: ${peers[nk].kyberPk.slice(0, 24)}\nNew: ${kpub.slice(0, 24)}\n\nAccept new key?`;
       if (!confirm(warn)) return;
-      ktRecord(npub, kpub, 'key_changed');
+      ktRecord(nk, kpub, 'key_changed');
     }
-    peers[npub].kyberPk = kpub;
-    if (name) peers[npub].name = name;
+    peers[nk].kyberPk = kpub;
   }
   savePeers();
-  nb.value = ''; cb.value = ''; nn.value = '';
+  inp.value = '';
   renderPeers(); renderContacts();
-  alert(`Peer "${name}" added ✓`);
 }
 
 export function delPeer(npub) {
@@ -106,29 +109,19 @@ function savePeers() {
 }
 
 // ── Fingerprint verification ──
+// openFP, closeFP, confirmVerify are implemented in app.js (need SHA3_256 + emoji logic)
+// These exports are kept for compatibility but delegate to window.openFP / window.closeFP
 
 export function openFP(npub) {
-  const peer = window._PEERS?.[npub]; if (!peer) return;
-  const fp = kh(npub + (peer.kyberPk || '')).match(/.{4}/g).join(' ');
-  document.getElementById('fpName').textContent   = peer.name;
-  document.getElementById('fpPub').textContent    = npub;
-  document.getElementById('fpKpub').textContent   = (peer.kyberPk || '—').slice(0, 48) + '...';
-  document.getElementById('fpHash').textContent   = fp;
-  document.getElementById('fpStatus').textContent = peer.fpVerified ? '✓ Verified' : '⚠ Not verified — confirm with peer out-of-band';
-  document.getElementById('fpStatus').style.color = peer.fpVerified ? 'var(--grn)' : 'var(--red)';
-  document.getElementById('fpModal').dataset.npub = npub;
-  document.getElementById('fpModal').classList.add('show');
+  if (window.openFP) window.openFP(npub);
 }
 
-export function closeFP() { document.getElementById('fpModal').classList.remove('show'); }
+export function closeFP() {
+  if (window.closeFP) window.closeFP();
+}
 
 export function verifyFP() {
-  const npub = document.getElementById('fpModal').dataset.npub;
-  if (!npub || !window._PEERS?.[npub]) return;
-  window._PEERS[npub].fpVerified = true; savePeers();
-  document.getElementById('fpStatus').textContent = '✓ Verified';
-  document.getElementById('fpStatus').style.color = 'var(--grn)';
-  renderPeers(); renderContacts();
+  if (window.confirmVerify) window.confirmVerify();
 }
 
 // ── Key Transparency log ──

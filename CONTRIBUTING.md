@@ -7,7 +7,7 @@ Thank you for your interest in contributing to RELAY.
 RELAY is a single-page application with no build step required for development.
 
 ```bash
-git clone https://github.com/your-username/relay.git
+git clone https://github.com/boomstrickweb/rmessage.git
 cd relay
 # Open index.html in a browser, or serve with any static server:
 npx serve .

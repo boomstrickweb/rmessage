@@ -153,14 +153,10 @@ G.sendTxt = async () => {
   document.getElementById('sbtn').disabled = true;
   const op = G._C.add('text', { text }, G.AP);
   renderMsgs();
-  if (!peer?.kyberPk) {
-    const bundle = JSON.stringify({ nostrPub: G._NK.pub, kyberPk: G._KKkeys.pk, v: 1 });
-    const fullOp = { ...op, _kyberBundle: bundle, _sender: { nostr: G._NK.pub, kyber: G._KKkeys.pk } };
-    await _queueOrSend(G.AP, peer?.kyberPk, fullOp);
-  } else {
-    const fullOp = { ...op, _sender: { nostr: G._NK.pub, kyber: G._KKkeys.pk } };
-    await _queueOrSend(G.AP, peer.kyberPk, fullOp);
-  }
+  renderContacts(); // update chat list last-message preview immediately
+  const bundle = JSON.stringify({ nostr: G._NK.pub, kyber: G._KKkeys.pk });
+  const fullOp = { ...op, _kyberBundle: bundle, _sender: { nostr: G._NK.pub, kyber: G._KKkeys.pk } };
+  await _queueOrSend(G.AP, peer?.kyberPk, fullOp);
 };
 
 async function _queueOrSend(toPub, kyberPk, op) {
@@ -339,6 +335,83 @@ function buildRelayPills() {
   });
 }
 
+// ── Fingerprint emoji logic (matches original index.html exactly) ──
+
+const FP_EMOJIS = ['🔥','🌊','⚡','🌙','🦋','🐉','🌺','🎯','🔮','🌈',
+  '🦅','🐬','🌸','⭐','🎪','🦊','🌴','🎭','🔱','🦁',
+  '🌋','🐙','🎨','🏔','🦄','🌊','🎸','🦜','🌙','🔮',
+  '🎯','🦋','⚡','🌺','🐉','🔥','🎪','🦅','🐬','🌸',
+  '🎭','🔱','🦁','🌋','🐙','🎨','🏔','🦄','🎸','🦜',
+  '🍄','🦩','🎲','🌿','🔭','🦚','🎠','🌠','🦋','🔑',
+  '🌊','⚗️','🦈','🎡'];
+
+async function computeFP(peerPub) {
+  const peer = G._PEERS?.[peerPub]; if (!peer?.kyberPk) return null;
+  const [a, b] = G._NK.pub < peerPub
+    ? [G._NK.pub + G._KKkeys.pk, peerPub + peer.kyberPk]
+    : [peerPub + peer.kyberPk,   G._NK.pub + G._KKkeys.pk];
+  const raw  = new TextEncoder().encode(a + '|' + b);
+  const { SHA3_256: sha3 } = await import('./crypto/sha3.js');
+  return sha3(raw);
+}
+
+function fpToEmojis(hash) {
+  return Array.from({ length: 12 }, (_, i) => FP_EMOJIS[hash[i] % FP_EMOJIS.length]);
+}
+
+function fpToHex(hash) {
+  return Array.from(hash).map(x => x.toString(16).padStart(2,'0')).join('').match(/.{1,8}/g).join(' ');
+}
+
+let _fpCurrentPeer = null;
+
+G.openFP = async (peerPub) => {
+  if (!peerPub || !G._PEERS?.[peerPub]) return;
+  _fpCurrentPeer = peerPub;
+  const peer = G._PEERS[peerPub];
+  const hash = await computeFP(peerPub);
+  if (!hash) return;
+  const emojis = fpToEmojis(hash);
+  const hexStr = fpToHex(hash);
+  const verified = peer.fpVerified === hexStr;
+
+  document.getElementById('fpEmojis').innerHTML = emojis.map(e => `<div class="fp-em">${e}</div>`).join('');
+  document.getElementById('fpHex').textContent  = hexStr;
+  document.getElementById('fpSubtitle').innerHTML =
+    `Compare emojis with <b>${peer.name}</b> out-of-band.<br>All match? Connection is secure.`;
+
+  const statusEl = document.getElementById('fpStatus');
+  const verifyBtn = document.getElementById('fpVerifyBtn');
+  if (verified) {
+    statusEl.innerHTML = `<div class="fp-ok">✓ This peer is verified. Connection is secure.</div>`;
+    verifyBtn.textContent = '✓ Verified';
+    verifyBtn.style.background = 'var(--b2)';
+    verifyBtn.style.color = 'var(--mut)';
+  } else {
+    statusEl.innerHTML = `<div class="fp-warn">⚠ Not yet verified. Compare with your peer!</div>`;
+    verifyBtn.textContent = '✓ Mark as Verified';
+    verifyBtn.style.background = 'var(--grn)';
+    verifyBtn.style.color = '#000';
+  }
+
+  document.getElementById('fpModal').dataset.npub = peerPub;
+  document.getElementById('fpModal').classList.add('show');
+};
+
+G.closeFP = () => { document.getElementById('fpModal').classList.remove('show'); _fpCurrentPeer = null; };
+
+G.confirmVerify = async () => {
+  const npub = document.getElementById('fpModal').dataset.npub || _fpCurrentPeer;
+  if (!npub || !G._PEERS?.[npub]) return;
+  const hash = await computeFP(npub); if (!hash) return;
+  G._PEERS[npub].fpVerified = fpToHex(hash);
+  localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
+  const fpBtn = document.getElementById('fpBtn');
+  if (G.AP === npub) { fpBtn.className = 'fp-btn verified'; fpBtn.textContent = '✓'; }
+  G.closeFP();
+  renderContacts(); renderPeers();
+};
+
 // ── App boot ──
 
 async function boot() {
@@ -346,7 +419,7 @@ async function boot() {
   document.getElementById('lmsg').textContent = 'Initialising ML-KEM-768...';
   await yieldUI();
 
-  // Load peers + CRDT + offline queue
+  // Load peers + offline queue
   G._PEERS = {};
   try { G._PEERS = JSON.parse(localStorage.getItem('rl5_peers') || '{}'); } catch {}
   _loadOQ();
@@ -369,7 +442,6 @@ async function boot() {
 
   if (hasEncryptedSKs()) {
     document.getElementById('loading').style.display = 'none';
-    document.getElementById('lmsg').textContent = 'Checking PIN...';
     const result = await awaitPin('unlock');
     nkPriv = result.nkPriv; kkSk = result.kkSk;
     document.getElementById('loading').style.display = 'flex';
@@ -377,64 +449,41 @@ async function boot() {
     // First run — generate keys
     document.getElementById('lmsg').textContent = 'Generating post-quantum keypair...';
     await yieldUI();
-    const nk  = genNKP();
-    const kk  = kemKG();
-    nkPriv    = nk.priv; const nkPub = nk.pub;
-    kkSk      = kk.sk;   const kkPk  = kk.pk;
-    G._NK     = { priv: nkPriv, pub: nkPub };
-    G._KKkeys = { pk: kkPk, sk: kkSk };
+    const nk = genNKP();
+    document.getElementById('lmsg').textContent = 'ML-KEM-768 (FIPS 203)...';
+    await yieldUI();
+    const kk = kemKG();
+    // Save public parts unencrypted (needed to survive unlock)
+    localStorage.setItem('rl5_nkey_pub', nk.pub);
+    localStorage.setItem('rl5_kkey_pub', kk.pk);
+    localStorage.setItem('rl5_nkey', JSON.stringify({ pub: nk.pub }));
+    localStorage.setItem('rl5_kkey', JSON.stringify({ pk: kk.pk }));
 
     document.getElementById('loading').style.display = 'none';
     const pin = await awaitPin('setup');
     document.getElementById('loading').style.display = 'flex';
     document.getElementById('lmsg').textContent = 'Encrypting keys with PIN...';
-    await saveEncryptedSKs(pin, nkPriv, kkSk);
+    await saveEncryptedSKs(pin, nk.priv, kk.sk);
+    nkPriv = nk.priv; kkSk = kk.sk;
 
-    // Optional biometric enrollment
     if (await bioSupported()) {
       const enroll = await bioEnroll(pin);
       if (enroll) console.log('Biometric enrolled');
     }
   }
 
-  // Reconstruct NK + KKkeys from saved private / secret keys
-  document.getElementById('lmsg').textContent = 'Loading ML-KEM-768 keypair...';
+  // Reconstruct full key objects — pub from localStorage, priv/sk from PIN-decrypted store
+  document.getElementById('lmsg').textContent = 'Loading keys...';
   await yieldUI();
 
-  if (!G._NK) {
-    const { genNKP: gNKP } = await import('./crypto/secp256k1.js');
-    // Reconstruct pub from priv (scalar multiplication)
-    const _bi = s => BigInt('0x' + s);
-    const _SP = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2Fn;
-    const _SN = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141n;
-    // Re-derive pub from stored priv using secp256k1 — handled inside genNKP if needed
-    // For simplicity, store pub alongside priv in the encrypted blob
-    // (the encrypted store already contains both — this path is a no-op if above set G._NK)
-  }
+  // Read pub keys from the same keys the original app uses
+  const nkPub = JSON.parse(localStorage.getItem('rl5_nkey') || '{}').pub ||
+                localStorage.getItem('rl5_nkey_pub') || '';
+  const kkPub = JSON.parse(localStorage.getItem('rl5_kkey') || '{}').pk  ||
+                localStorage.getItem('rl5_kkey_pub') || '';
 
-  // If still not set (first-run path already set G._NK above), reconstruct
-  // from stored blob which should include pub. For unlock path, we need to
-  // store both priv+pub. Here we use a convenience: re-derive pub from priv.
-  if (!G._NK) {
-    // Reconstruct public key from private key using secp256k1
-    const { _SG } = await import('./crypto/secp256k1.js').catch(() => ({ _SG: null }));
-    G._NK = { priv: nkPriv, pub: localStorage.getItem('rl6_nkpub') || '' };
-    if (!G._NK.pub) {
-      const nkNew = genNKP(); // fallback (generates new — should not happen)
-      G._NK = nkNew;
-      localStorage.setItem('rl6_nkpub', nkNew.pub);
-    }
-  }
-
-  // Decode KK keys
-  if (!G._KKkeys) {
-    const kkPk = localStorage.getItem('rl6_kkpub') || '';
-    G._KKkeys  = { pk: kkPk, sk: kkSk };
-  }
-
-  // Persist pub keys so they survive unlock
-  localStorage.setItem('rl6_nkpub', G._NK.pub);
-  localStorage.setItem('rl6_kkpub', G._KKkeys.pk);
+  G._NK     = { priv: nkPriv, pub: nkPub };
+  G._KKkeys = { pk: kkPub,    sk: kkSk  };
 
   // ML-DSA keypair (for key transparency signatures)
   document.getElementById('lmsg').textContent = 'Loading ML-DSA-44 (post-quantum signatures)...';

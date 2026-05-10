@@ -1,151 +1,252 @@
 /**
  * events.js — Incoming Nostr event dispatcher
  *
- * Decrypts incoming kind:4 (messages) and kind:25050 (signaling) events.
- * Routes to: chat messages, WebRTC signaling, heartbeats, onion relay,
- *            dummy/padding events (silently dropped), key rotation.
+ * Decrypts incoming events: v:3 (signaling/legacy), v:4 (padded messages),
+ * v:5 (heartbeat), v:6 (onion routing).
+ * Routes to: chat messages, WebRTC signaling, onion relay forwarding,
+ *            heartbeats, dummy/padding events (silently dropped).
+ *
+ * Matches the original single-file implementation exactly.
  *
  * Exports: onEv
  */
 
 'use strict';
 
-import { kemD }           from '../crypto/mlkem.js';
-import { aesDec, drDecrypt, pqDecStr } from '../crypto/ratchet.js';
-import { mldsaVerify }    from '../crypto/mldsa.js';
-import { answerCall, endCall, waitForGathering, sanitizeSDP, PCManager, ensureDC, processDCQ } from '../transport/webrtc.js';
-import { markOnline }     from '../transport/onion.js';
-import { nostrPub }       from '../transport/nostr.js';
-import { verifyDeniable } from '../transport/padding.js';
-import { ktRecord }       from '../ui/settings.js';
-import { renderContacts, renderMsgs, showBadge } from '../ui/render.js';
-import { idbSave }        from '../storage/crdt.js';
-import { fhex, hex }      from '../utils.js';
+import { kemD }                                     from '../crypto/mlkem.js';
+import { aesDec, yieldUI }                          from '../crypto/ratchet.js';
+import { answerCall, endCall, waitForGathering,
+         sanitizeSDP, PCManager, processDCQ }       from '../transport/webrtc.js';
+import { markOnline }                               from '../transport/onion.js';
+import { nostrPub }                                 from '../transport/nostr.js';
+import { verifyDeniable }                           from '../transport/padding.js';
+import { ktRecord }                                 from '../ui/settings.js';
+import { renderContacts, renderMsgs, showBadge }    from '../ui/render.js';
+import { hex }                                      from '../utils.js';
 
 const _seen = new Set();
+const COLS = ['#e8ff00','#00aaff','#00ff88','#ff5588','#ff9900','#cc44ff'];
 
-async function decEv(ev) {
-  const KKkeys = window._KKkeys;
-  if (!KKkeys?.sk) return null;
+// ── unpadPlain helper (matches original) ──
+function unpadPlain(bytes) {
   try {
-    const outer = JSON.parse(ev.content);
-    if (!outer.kem) return null;
-    const K   = kemD(outer.kem, KKkeys.sk);
-    const raw = await aesDec(K, outer.iv, outer.ct);
-    return JSON.parse(new TextDecoder().decode(raw));
-  } catch { return null; }
+    const rlen = new DataView(bytes.buffer, bytes.byteOffset, 2).getUint16(0);
+    if (rlen > 0 && rlen <= bytes.length - 2)
+      return new TextDecoder().decode(bytes.slice(2, 2 + rlen));
+  } catch {}
+  return new TextDecoder().decode(bytes);
 }
 
+// ── Peer helpers ──
+function savePeers() {
+  localStorage.setItem('rl5_peers', JSON.stringify(window._PEERS));
+}
+
+function autoRegisterPeer(nostrPub, kyberPk) {
+  const PEERS = window._PEERS;
+  const NK    = window._NK;
+  if (!nostrPub || !kyberPk || nostrPub === NK?.pub) return;
+  if (!PEERS[nostrPub]) {
+    PEERS[nostrPub] = {
+      name: nostrPub.slice(0, 10),
+      color: COLS[Object.keys(PEERS).length % COLS.length],
+      kyberPk, lastRead: 0,
+    };
+    savePeers(); renderContacts(); ktRecord(nostrPub, null, kyberPk, 'key_first');
+  } else {
+    const peer = PEERS[nostrPub];
+    if (!peer.kyberPk) {
+      peer.kyberPk = kyberPk; savePeers();
+      ktRecord(nostrPub, null, kyberPk, 'key_first');
+    } else if (peer.kyberPk !== kyberPk) {
+      ktRecord(nostrPub, nostrPub && window._PEERS?.[nostrPub]?.kyberPk, kyberPk, 'key_changed');
+      peer.kyberPk = kyberPk; peer.fpVerified = null; savePeers();
+      setTimeout(() => alert(
+        '⚠ KEY CHANGE DETECTED for ' + (peer.name || nostrPub.slice(0, 10)) +
+        '!\nThis may be a MITM attack.\nPlease re-verify the fingerprint.'
+      ), 500);
+    }
+  }
+  markOnline(nostrPub);
+}
+
+// ── Onion relay forwarding ──
+async function handleOnionRelay(layer) {
+  const next     = layer.next;
+  const nextPeer = window._PEERS?.[next];
+  if (!next || !nextPeer?.kyberPk) return;
+  const { genNKP, buildEv } = await import('../crypto/secp256k1.js');
+  const ephNK = genNKP();
+  const ev = await buildEv(4, layer.ct, [['p', next]], ephNK.priv, ephNK.pub);
+  Object.values(window._WS || {}).forEach(ws => {
+    if (ws.readyState === 1) ws.send(JSON.stringify(['EVENT', ev]));
+  });
+}
+
+// ── Process a decrypted chat message object (async for deniable auth) ──
+async function processMsg(obj, fromPub) {
+  const NK = window._NK;
+  const C  = window._C;
+  if (!obj?.id || !obj?.type) return;
+  if (obj.type === '__pad__' || obj.type === '__hb__') return;
+  if (fromPub === NK?.pub) return; // own message echoed back
+  obj.from = fromPub;
+  markOnline(fromPub);
+
+  // Verify deniable auth tag (matches original — drops if invalid/tampered)
+  try {
+    const { verifyDeniable } = await import('../transport/padding.js');
+    const daResult = await verifyDeniable(obj, fromPub);
+    if (daResult === false) {
+      console.warn('DA: invalid auth tag from', fromPub?.slice(0, 8));
+      return; // drop tampered message
+    }
+  } catch {}
+
+  if (!C) return;
+  if (!C.merge(obj)) return;
+  if (window._AP === fromPub) renderMsgs();
+  else { renderContacts(); showBadge(); }
+  // Disappearing messages
+  const dis = window._disappearMs;
+  if (dis > 0) {
+    setTimeout(() => {
+      C.ops = C.ops.filter(o => o.id !== obj.id);
+      C._save(); renderContacts();
+      if (window._AP === fromPub) renderMsgs();
+    }, dis);
+  }
+}
+
+// ── Main event handler ──
 export async function onEv(ev) {
   if (_seen.has(ev.id)) return;
   _seen.add(ev.id);
   if (_seen.size > 1000) { const first = _seen.values().next().value; _seen.delete(first); }
 
-  const NK = window._NK; if (!NK) return;
+  const NK     = window._NK;   if (!NK) return;
+  const KKkeys = window._KKkeys; if (!KKkeys?.sk) return;
+
+  // Filter: only process events addressed to us
   if (!ev.tags?.some(t => t[0] === 'p' && t[1] === NK.pub)) return;
 
-  const payload = await decEv(ev);
-  if (!payload) return;
+  let parsed;
+  try { parsed = JSON.parse(ev.content); } catch { return; }
+  if (!parsed?.kem) return;
 
-  // Resolve sender — Sealed Sender: sender's real identity inside payload
-  const senderNpub  = payload._sender?.nostr || payload.from || ev.pubkey;
-  const senderKyber = payload._sender?.kyber || (window._PEERS?.[senderNpub]?.kyberPk);
+  await yieldUI();
 
-  // Heartbeat
-  if (payload.type === '__hb__') { markOnline(senderNpub); return; }
-
-  // Dummy (traffic padding) — drop silently
-  if (payload.type === '__pad__') { markOnline(senderNpub); return; }
-
-  // Onion relay: forward to next hop if we are not the destination
-  if (payload.type === '__onion__' && payload.ct) {
-    const inner = JSON.parse(payload.ct);
-    if (inner.type === 'onion_relay') {
-      const next = inner.next, nextPeer = window._PEERS?.[next];
-      if (next && nextPeer?.kyberPk && next !== NK.pub) {
-        await nostrPub(next, nextPeer.kyberPk, { type: '__onion__', ct: inner.ct }, 4);
-      } else if (next === NK.pub && inner.ct) {
-        // We are the destination — recurse with the inner ciphertext
-        const finalPayload = JSON.parse(inner.ct);
-        if (finalPayload.type === 'onion_final') {
-          await onEv({ ...ev, content: JSON.stringify({ v: 3, ...JSON.parse(finalPayload.payload) }), id: hex(crypto.getRandomValues(new Uint8Array(16))) });
-        }
-      }
-    }
-    return;
-  }
-
-  // Deniable auth check (best-effort — does not block delivery)
-  const daResult = await verifyDeniable(payload, senderNpub);
-  if (daResult === false) { console.warn('Deniable auth mismatch from', senderNpub); }
-
-  // Update peer's Kyber key if bundled
-  if (senderKyber && window._PEERS?.[senderNpub]) {
-    const peer = window._PEERS[senderNpub];
-    if (!peer.kyberPk) { peer.kyberPk = senderKyber; savePeers(); }
-    else if (peer.kyberPk !== senderKyber) {
-      ktRecord(senderNpub, senderKyber, 'key_changed');
-      peer.kyberPk = senderKyber; peer.fpVerified = false; savePeers();
-    }
-  }
-
-  // ── WebRTC signaling ──
-
-  if (ev.kind === 25050 || payload.type === 'offer' || payload.type === 'answer' || payload.type === 'ice' || payload.type === 'reject' || payload.type === 'end' || payload.type === 'ice_restart' || payload.type === 'dc_offer') {
-    await handleSignaling(payload, senderNpub, senderKyber, ev);
-    return;
-  }
-
-  // ── Chat messages ──
-
-  if (!window._C) return;
-  const C = window._C;
-
-  // Key rotate (DR text messages use a nested DR payload)
-  let finalPayload = payload;
-  if (payload.v === 4 && payload.initCt) {
+  // ── v:6 — Onion routing ──
+  if (parsed.v === 6 && ev.kind === 4) {
     try {
-      const decBytes = await drDecrypt(senderNpub, JSON.stringify(payload), KKkeys.sk);
-      finalPayload   = JSON.parse(new TextDecoder().decode(decBytes));
-    } catch (e) { console.warn('DR decrypt failed, using raw', e); }
+      const raw   = await aesDec(kemD(parsed.kem, KKkeys.sk), parsed.iv, parsed.ct);
+      const layer = JSON.parse(new TextDecoder().decode(raw));
+
+      if (layer.type === 'onion_relay') {
+        await handleOnionRelay(layer);
+        return;
+      }
+
+      if (layer.type === 'onion_final') {
+        try {
+          const innerParsed = JSON.parse(layer.payload);
+          if (innerParsed.v === 4 || innerParsed.v === 3) {
+            const outerBytes = await aesDec(kemD(innerParsed.kem, KKkeys.sk), innerParsed.iv, innerParsed.ct);
+            const msgStr     = unpadPlain(outerBytes);
+            const obj        = JSON.parse(msgStr);
+            if (obj._sender?.nostr) autoRegisterPeer(obj._sender.nostr, obj._sender.kyber);
+            processMsg(obj, obj._sender?.nostr || ev.pubkey);
+          }
+        } catch (e) { console.warn('Onion final error', e); }
+        return;
+      }
+    } catch (e) { console.warn('Onion v:6 error', e); }
+    return;
   }
 
-  if (!finalPayload.type || finalPayload.type === 'text' || finalPayload.type === 'image' || finalPayload.type === 'voice' || finalPayload.type === 'file') {
-    const op = {
-      id:      finalPayload.id   || hex(crypto.getRandomValues(new Uint8Array(16))),
-      from:    senderNpub,
-      to:      NK.pub,
-      lam:     finalPayload.lam  || 0,
-      vc:      finalPayload.vc   || {},
-      type:    finalPayload.type || 'text',
-      payload: finalPayload.payload || finalPayload,
-      ts:      finalPayload.ts   || ev.created_at * 1000,
-    };
-    if (C.merge(op)) {
-      renderContacts();
-      if (window._AP === senderNpub) renderMsgs();
-      showBadge();
-      // Auto-delete if disappearing messages enabled
-      const dis = window._disappearMs;
-      if (dis > 0) setTimeout(() => { C.ops = C.ops.filter(o => o.id !== op.id); C._save(); renderContacts(); if (window._AP === senderNpub) renderMsgs(); }, dis);
+  // ── v:4 — Padded message (sealed sender) ──
+  if (parsed.v === 4 && ev.kind === 4) {
+    let str;
+    try {
+      const raw = await aesDec(kemD(parsed.kem, KKkeys.sk), parsed.iv, parsed.ct);
+      str = unpadPlain(raw);
+    } catch { return; }
+    let obj; try { obj = JSON.parse(str); } catch { return; }
+
+    const fp = obj._sender?.nostr || ev.pubkey;
+    if (fp === NK.pub) return;
+
+    // Auto-register peer
+    if (obj._sender?.nostr) autoRegisterPeer(obj._sender.nostr, obj._sender.kyber);
+
+    // Legacy kyber tag
+    const kyberTag = ev.tags?.find(t => t[0] === 'kyber' && t[1]?.length > 100);
+    if (kyberTag && fp) autoRegisterPeer(fp, kyberTag[1]);
+
+    markOnline(fp);
+
+    // Heartbeat / padding — drop after registering peer
+    if (obj.type === '__hb__' || obj.type === '__pad__') return;
+
+    // WebRTC signaling
+    if (ev.kind === 25050 || ['offer','answer','ice','reject','end','ice_restart','dc_offer','dc_answer'].includes(obj.type)) {
+      await handleSignaling(obj, fp);
+      return;
     }
+
+    processMsg(obj, fp);
+    return;
+  }
+
+  // ── v:3 — Legacy / signaling (no padding) ──
+  if (parsed.v === 3) {
+    let str;
+    try {
+      const raw = await aesDec(kemD(parsed.kem, KKkeys.sk), parsed.iv, parsed.ct);
+      str = new TextDecoder().decode(raw);
+    } catch { return; }
+    let obj; try { obj = JSON.parse(str); } catch { return; }
+
+    const fp = obj._sender?.nostr || ev.pubkey;
+    if (fp === NK.pub) return;
+    if (obj._sender?.nostr) autoRegisterPeer(obj._sender.nostr, obj._sender.kyber);
+    markOnline(fp);
+    if (obj.type === '__hb__' || obj.type === '__pad__') return;
+
+    if (ev.kind === 25050 || ['offer','answer','ice','reject','end','ice_restart','dc_offer','dc_answer'].includes(obj.type)) {
+      await handleSignaling(obj, fp);
+      return;
+    }
+    processMsg(obj, fp);
+    return;
+  }
+
+  // ── v:5 — Heartbeat (simple AES-KEM, no padding) ──
+  if (parsed.v === 5) {
+    try {
+      const raw = await aesDec(kemD(parsed.kem, KKkeys.sk), parsed.iv, parsed.ct);
+      const obj = JSON.parse(new TextDecoder().decode(raw));
+      if (obj.type === '__hb__' && obj.from) markOnline(obj.from);
+    } catch {}
+    return;
   }
 }
 
 // ── Signaling handler ──
-
-async function handleSignaling(payload, from, fromKyber, ev) {
-  const NK = window._NK;
+async function handleSignaling(payload, from) {
+  const NK   = window._NK;
   const type = payload.type;
+  const peer = window._PEERS?.[from];
 
   if (type === 'offer') {
     window._pendingOffer = { sdp: payload.sdp, from };
-    document.getElementById('incName').textContent = window._PEERS?.[from]?.name || from.slice(0, 12);
+    document.getElementById('incName').textContent = peer?.name || from.slice(0, 12);
     document.getElementById('incoming').classList.add('show');
     markOnline(from);
+    return;
   }
 
-  else if (type === 'dc_offer') {
+  if (type === 'dc_offer') {
     if (window._PCM) { try { window._PCM.close(); } catch {} }
     window._PCM = new PCManager(false);
     await window._PCM.init(from, false);
@@ -154,56 +255,56 @@ async function handleSignaling(payload, from, fromKyber, ev) {
     const answer = await window._PCM.pc.createAnswer();
     await window._PCM.pc.setLocalDescription(answer);
     await waitForGathering(window._PCM.pc, 5000);
-    const peer = window._PEERS?.[from];
-    if (peer?.kyberPk) await nostrPub(from, peer.kyberPk, { type: 'dc_answer', sdp: sanitizeSDP(window._PCM.pc.localDescription.sdp) }, 25050);
+    if (peer?.kyberPk)
+      await nostrPub(from, peer.kyberPk, { type: 'dc_answer', sdp: sanitizeSDP(window._PCM.pc.localDescription.sdp) }, 25050);
+    return;
   }
 
-  else if (type === 'dc_answer') {
-    if (window._PCM?.pc) {
+  if (type === 'dc_answer') {
+    if (window._PCM?.pc)
       await window._PCM.setRemote(new RTCSessionDescription({ type: 'answer', sdp: payload.sdp }));
-    }
+    return;
   }
 
-  else if (type === 'answer') {
+  if (type === 'answer') {
     if (window._PCM?.pc && window._callState === 'calling') {
       window._callState = 'connecting';
       setCallSt('Connecting... (TURN)', 'ring');
       await window._PCM.setRemote(new RTCSessionDescription({ type: 'answer', sdp: payload.sdp }));
     }
+    return;
   }
 
-  else if (type === 'ice') {
-    if (window._PCM?.pc && payload.candidate) {
-      const c = new RTCIceCandidate(payload.candidate);
-      await window._PCM.addICE(c);
-    }
+  if (type === 'ice') {
+    if (window._PCM?.pc && payload.candidate)
+      await window._PCM.addICE(new RTCIceCandidate(payload.candidate)).catch(() => {});
+    return;
   }
 
-  else if (type === 'ice_restart') {
+  if (type === 'ice_restart') {
     if (window._PCM?.pc && window._callState === 'connected') {
       await window._PCM.pc.setRemoteDescription(new RTCSessionDescription({ type: 'offer', sdp: payload.sdp }));
       const answer = await window._PCM.pc.createAnswer();
       await window._PCM.pc.setLocalDescription(answer);
       await waitForGathering(window._PCM.pc, 5000);
-      const peer = window._PEERS?.[from];
-      if (peer?.kyberPk) await nostrPub(from, peer.kyberPk, { type: 'answer', sdp: sanitizeSDP(window._PCM.pc.localDescription.sdp) }, 25050);
+      if (peer?.kyberPk)
+        await nostrPub(from, peer.kyberPk, { type: 'answer', sdp: sanitizeSDP(window._PCM.pc.localDescription.sdp) }, 25050);
     }
+    return;
   }
 
-  else if (type === 'reject') {
+  if (type === 'reject') {
     if (window._callState === 'calling') { setCallSt('Call declined', 'err'); setTimeout(() => endCall(), 2000); }
+    return;
   }
 
-  else if (type === 'end') {
+  if (type === 'end') {
     if (window._callState !== 'idle') { setCallSt('Call ended', 'err'); setTimeout(() => endCall(), 1000); }
+    return;
   }
 }
 
 function setCallSt(t, cls) {
   const el = document.getElementById('callSt');
   if (el) { el.textContent = t; el.className = 'call-st' + (cls ? ' ' + cls : ''); }
-}
-
-function savePeers() {
-  localStorage.setItem('rl5_peers', JSON.stringify(window._PEERS));
 }

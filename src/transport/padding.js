@@ -1,30 +1,20 @@
 /**
- * padding.js — Traffic Padding + Sealed Sender + Deniable Authentication
+ * padding.js — Traffic Padding + Deniable Authentication
  *
- * Traffic Padding:
- *   Sends dummy events to all known peers at random intervals (5–14s).
- *   Dummy events are indistinguishable from real ones at the relay level.
+ * Matches original single-file implementation exactly.
+ * sendDummySealed: dummy events via real NK keypair (not ephemeral)
+ * stampDeniable / verifyDeniable: HMAC-SHA256 deniable auth tags
  *
- * Sealed Sender:
- *   Real events use a throwaway ephemeral Nostr keypair.
- *   Relay sees: anonymous pubkey → recipient tag.
- *   Real sender identity is encrypted inside the payload.
- *
- * Deniable Authentication:
- *   HMAC-SHA256 tag derived from the Double Ratchet epoch shared secret.
- *   Both sender and receiver can compute this tag, so neither can
- *   prove authorship to a third party (Signal-style deniability).
- *
- * Exports: startPadding, stopPadding, sendWithCoverSealed, sendDummySealed,
+ * Exports: startPadding, stopPadding, sendDummySealed,
  *          stampDeniable, verifyDeniable
  */
 
 'use strict';
 
-import { buildEv }         from '../crypto/secp256k1.js';
-import { genNKP }          from '../crypto/secp256k1.js';
-import { pqEncPadded }     from '../crypto/ratchet.js';
-import { hex, rnd, te }    from '../utils.js';
+import { buildEv }      from '../crypto/secp256k1.js';
+import { kemE }         from '../crypto/mlkem.js';
+import { aesEnc }       from '../crypto/ratchet.js';
+import { hex, rnd, te } from '../utils.js';
 
 const PAD_MIN_MS = 5000;
 const PAD_MAX_MS = 14000;
@@ -43,17 +33,11 @@ async function getDeniableKey(peerPub) {
     const st = JSON.parse(localStorage.getItem('rl6_dr_' + peerPub));
     if (!st?.rootKey) return null;
     const { hkdf1 } = await import('../crypto/ratchet.js');
-    return hkdf1(
-      (await import('../utils.js')).fhex(st.rootKey),
-      new Uint8Array(32),
-      'RELAY_DENIABLE_AUTH'
-    );
+    const { fhex }  = await import('../utils.js');
+    return hkdf1(fhex(st.rootKey), new Uint8Array(32), 'RELAY_DENIABLE_AUTH');
   } catch { return null; }
 }
 
-/**
- * Stamp a deniable HMAC auth tag on an outgoing message object.
- */
 export async function stampDeniable(obj, peerPub) {
   try {
     const dk = await getDeniableKey(peerPub);
@@ -65,10 +49,6 @@ export async function stampDeniable(obj, peerPub) {
   return obj;
 }
 
-/**
- * Verify a deniable HMAC auth tag on an incoming message.
- * Returns true (valid), false (tampered), or null (no tag — backward compat).
- */
 export async function verifyDeniable(obj, peerPub) {
   if (!obj._da) return null;
   try {
@@ -84,41 +64,30 @@ export async function verifyDeniable(obj, peerPub) {
   } catch { return null; }
 }
 
-// ── Sealed Sender ──
-
-async function sealedSend(toPub, encContent, tags) {
-  const ephNK = genNKP();
-  const ev    = await buildEv(4, encContent, tags, ephNK.priv, ephNK.pub);
-  Object.values(window._WS || {}).forEach(ws => { if (ws.readyState === 1) ws.send(JSON.stringify(['EVENT', ev])); });
-}
+// ── Dummy send (matches original sendDummy — uses real NK keypair) ──
 
 export async function sendDummySealed(toPub) {
   const peer = window._PEERS?.[toPub];
-  if (!peer?.kyberPk) return;
-  const dummy = {
-    id: hex(rnd(16)), type: '__pad__', from: window._NK?.pub, to: toPub,
-    lam: 0, vc: {}, payload: {}, ts: Date.now(),
-    _sender: { nostr: window._NK?.pub, kyber: window._KKkeys?.pk },
-  };
-  await stampDeniable(dummy, toPub);
+  const NK   = window._NK;
+  const KK   = window._KKkeys;
+  if (!peer?.kyberPk || !NK || !KK) return;
   try {
-    const enc  = await pqEncPadded(peer.kyberPk, JSON.stringify(dummy));
-    const tags = [['p', toPub]];
-    await sealedSend(toPub, enc, tags);
+    const dummy = {
+      id: hex(rnd(16)), type: '__pad__', from: NK.pub,
+      to: toPub, lam: 0, vc: {}, payload: {}, ts: Date.now(),
+      _sender: { nostr: NK.pub, kyber: KK.pk },
+    };
+    // pqEncPadded: ML-KEM-768 + AES-GCM + padPlain → v:4
+    const { padPlain } = await import('../crypto/ratchet.js');
+    const { ct, K }    = kemE(peer.kyberPk);
+    const { iv, ct: a } = await aesEnc(K, padPlain(JSON.stringify(dummy)));
+    const enc  = JSON.stringify({ v: 4, kem: ct, iv, ct: a });
+    const tags = [['p', toPub], ['kyber', KK.pk]];
+    const ev   = await buildEv(4, enc, tags, NK.priv, NK.pub);
+    Object.values(window._WS || {}).forEach(ws => {
+      if (ws.readyState === 1) ws.send(JSON.stringify(['EVENT', ev]));
+    });
   } catch {}
-}
-
-/**
- * Send a real message with cover traffic (sealed sender + dummy events to all other peers).
- */
-export async function sendWithCoverSealed(realToPub, realKyberPk, obj) {
-  await stampDeniable(obj, realToPub);
-  const innerObj = { ...obj, _sender: { nostr: window._NK?.pub, kyber: window._KKkeys?.pk } };
-  const enc      = await pqEncPadded(realKyberPk, JSON.stringify(innerObj));
-  const tags     = [['p', realToPub]];
-  await sealedSend(realToPub, enc, tags);
-  const others = Object.keys(window._PEERS || {}).filter(p => p !== realToPub && window._PEERS[p]?.kyberPk);
-  others.forEach((p, i) => setTimeout(() => sendDummySealed(p), 50 + Math.random() * 250));
 }
 
 // ── Traffic padding loop ──
@@ -139,3 +108,27 @@ export function startPadding() {
 }
 
 export function stopPadding() { clearTimeout(_padTimer); _padTimer = null; }
+
+// ── sendWithCoverSealed (used by onion.js for compatibility) ──
+// Matches original sendWithCover: uses real NK keypair, not ephemeral
+
+export async function sendWithCoverSealed(realToPub, realKyberPk, obj) {
+  const NK = window._NK, KK = window._KKkeys;
+  if (!NK || !KK) return;
+  try {
+    const innerObj = { ...obj, _sender: { nostr: NK.pub, kyber: KK.pk } };
+    await stampDeniable(innerObj, realToPub);
+    const { padPlain } = await import('../crypto/ratchet.js');
+    const { ct, K }    = kemE(realKyberPk);
+    const { iv, ct: a } = await aesEnc(K, padPlain(JSON.stringify(innerObj)));
+    const enc  = JSON.stringify({ v: 4, kem: ct, iv, ct: a });
+    const tags = [['p', realToPub], ['kyber', KK.pk]];
+    const ev   = await buildEv(4, enc, tags, NK.priv, NK.pub);
+    Object.values(window._WS || {}).forEach(ws => {
+      if (ws.readyState === 1) ws.send(JSON.stringify(['EVENT', ev]));
+    });
+    // Cover traffic
+    const others = Object.keys(window._PEERS || {}).filter(p => p !== realToPub && window._PEERS[p]?.kyberPk);
+    others.forEach(p => setTimeout(() => sendDummySealed(p).catch(() => {}), 50 + Math.random() * 250));
+  } catch (e) { throw e; }
+}

@@ -42,21 +42,18 @@ function buildSettings() {
   const NK     = window._NK;
   const KKkeys = window._KKkeys;
 
-  // Identity display
-  document.getElementById('myNpub').textContent  = NK?.pub   ? NK.pub.slice(0, 32)  + '...' : '—';
-  document.getElementById('myKpub').textContent  = KKkeys?.pk ? KKkeys.pk.slice(0, 32) + '...' : '—';
-  document.getElementById('myFP').textContent    = NK?.pub   ? kh(NK.pub + (KKkeys?.pk || '')).match(/.{4}/g).join(' ') : '—';
-
-  // Stats
-  const total = window._C?.ops?.length || 0;
-  const peers = Object.keys(window._PEERS || {}).length;
-  document.getElementById('statMsgs').textContent  = total;
-  document.getElementById('statPeers').textContent = peers;
-  document.getElementById('statVer').textContent   = 'ML-KEM-768 · ML-DSA-44 · DR';
+  // My Keys card — uses the actual IDs in index.html
+  const nostrEl  = document.getElementById('myNostr');
+  const kyberEl  = document.getElementById('myKyber');
+  const topKey   = document.getElementById('topKey');
+  if (nostrEl) nostrEl.textContent = NK?.pub  ? NK.pub  : '—';
+  if (kyberEl) kyberEl.textContent = KKkeys?.pk ? KKkeys.pk.slice(0, 64) + '...' + KKkeys.pk.slice(-16) : '—';
+  if (topKey)  topKey.textContent  = NK?.pub  ? NK.pub.slice(0, 10) + '...' : 'key...';
 
   // Disappearing messages
   const curDis = parseInt(localStorage.getItem('rl6_disappear') || '0');
-  document.getElementById('disSelect').value = curDis.toString();
+  const disEl = document.getElementById('disSelect');
+  if (disEl) disEl.value = curDis.toString();
 
   renderPeers();
 }
@@ -79,12 +76,12 @@ export function addPeer() {
   const COLS_LOCAL = ['#e8ff00','#00aaff','#00ff88','#ff5588','#ff9900','#cc44ff'];
   if (!peers[nk]) {
     peers[nk] = { name: nk.slice(0, 10), kyberPk: kpub, color: COLS_LOCAL[Object.keys(peers).length % COLS_LOCAL.length], lastRead: 0 };
-    ktRecord(nk, kpub, 'key_first');
+    ktRecord(nk, null, kpub, 'key_first');
   } else {
     if (peers[nk].kyberPk && peers[nk].kyberPk !== kpub) {
       const warn = `⚠ Key change detected for ${peers[nk].name}!\n\nOld: ${peers[nk].kyberPk.slice(0, 24)}\nNew: ${kpub.slice(0, 24)}\n\nAccept new key?`;
       if (!confirm(warn)) return;
-      ktRecord(nk, kpub, 'key_changed');
+      ktRecord(nk, peers[nk].kyberPk, kpub, 'key_changed');
     }
     peers[nk].kyberPk = kpub;
   }
@@ -126,9 +123,17 @@ export function verifyFP() {
 
 // ── Key Transparency log ──
 
-export function ktRecord(peer, newPk, event) {
+export function ktRecord(peer, oldPk, newPk, event) {
+  // Support both (peer, newPk, event) and (peer, oldPk, newPk, event) signatures
+  if (typeof newPk === 'string' && ['key_first','key_changed','key_ok'].includes(event)) {
+    // called as (peer, oldPk, newPk, event)
+  } else if (['key_first','key_changed','key_ok'].includes(newPk)) {
+    // called as (peer, newPk, event) — oldPk is actually newPk
+    event = newPk; newPk = oldPk; oldPk = null;
+  }
   if (!window._ktLog) window._ktLog = [];
-  window._ktLog.push({ peer, newHash: kh(newPk).slice(0, 16), event, ts: Date.now() });
+  const hash = newPk ? kh(newPk).slice(0, 16) : '—';
+  window._ktLog.push({ peer, newHash: hash, event, ts: Date.now() });
   window._ktLog = window._ktLog.slice(-200);
   try { localStorage.setItem('rl6_kt', JSON.stringify(window._ktLog)); } catch {}
   ktRender();

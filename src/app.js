@@ -96,7 +96,19 @@ function showScreen(id) {
 }
 
 G.goContacts = () => { G.AP = null; showScreen('C'); renderContacts(); };
-G.goSettings = () => showScreen('S');
+G.goSettings = () => {
+  showScreen('S');
+  // Refresh key display every time settings opens
+  const NK = G._NK, KK = G._KKkeys;
+  const nostrEl = document.getElementById('myNostr');
+  const kyberEl = document.getElementById('myKyber');
+  const topKey  = document.getElementById('topKey');
+  if (nostrEl && NK?.pub)  nostrEl.textContent = NK.pub;
+  if (kyberEl && KK?.pk)   kyberEl.textContent = KK.pk.slice(0, 64) + '...' + KK.pk.slice(-16);
+  if (topKey  && NK?.pub)  topKey.textContent  = NK.pub.slice(0, 10) + '...';
+  renderPeers();
+  ktRender();
+};
 G._goContacts = G.goContacts;
 
 G.openChat = (pub) => {
@@ -149,14 +161,30 @@ G.sendTxt = async () => {
   const text = inp.value.trim();
   if (!text || !G.AP) return;
   const peer = G._PEERS?.[G.AP];
+  if (!peer?.kyberPk) {
+    alert('Peer has no key. Add their key bundle via ⚙ Settings → Add Peer.');
+    return;
+  }
   inp.value  = ''; inp.style.height = 'auto';
   document.getElementById('sbtn').disabled = true;
   const op = G._C.add('text', { text }, G.AP);
   renderMsgs();
-  renderContacts(); // update chat list last-message preview immediately
-  const bundle = JSON.stringify({ nostr: G._NK.pub, kyber: G._KKkeys.pk });
-  const fullOp = { ...op, _kyberBundle: bundle, _sender: { nostr: G._NK.pub, kyber: G._KKkeys.pk } };
-  await _queueOrSend(G.AP, peer?.kyberPk, fullOp);
+  renderContacts();
+  const fullOp = { ...op, _sender: { nostr: G._NK.pub, kyber: G._KKkeys.pk } };
+  if (CONN.size > 0) {
+    try {
+      await sendHybrid(G.AP, peer.kyberPk, fullOp);
+    } catch (e) {
+      console.error('Send failed:', e);
+      G._OQ.push({ to: G.AP, op: fullOp }); G._saveOQ();
+      document.getElementById('obar').classList.add('on');
+    }
+  } else {
+    G._OQ.push({ to: G.AP, op: fullOp }); G._saveOQ();
+    document.getElementById('obar').classList.add('on');
+  }
+  document.getElementById('sbtn').disabled = false;
+  document.getElementById('minp').focus();
 };
 
 async function _queueOrSend(toPub, kyberPk, op) {

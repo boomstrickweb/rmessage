@@ -65,6 +65,11 @@ export class PCManager {
       const p = G._PEERS[this.peer]; if (!p?.kyberPk) return;
       await nostrPub(this.peer, p.kyberPk, { type: 'ice', candidate: e.candidate.toJSON() }, 25050);
     };
+    this.pc.oniceconnectionstatechange = () => {
+      if (this.pc?.iceConnectionState === 'failed') {
+        // ICE restart logic could go here
+      }
+    };
     this.pc.onconnectionstatechange = () => {
       const s = this.pc?.connectionState;
       updateP2PStatus(s);
@@ -143,6 +148,10 @@ export async function onDCMsg(msg, peerPub) {
         G._C.merge(op2); renderMsgs();
       }
     } catch (e) { console.error('P2P decrypt fail', e); }
+  } else if (msg.type === 'key_rotate') {
+    if (G.handleKeyRotate) G.handleKeyRotate(peerPub, msg);
+  } else if (msg.type === 'key_rotate_resp') {
+    if (G.handleKeyRotateResp) G.handleKeyRotateResp(peerPub, msg);
   }
 }
 

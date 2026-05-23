@@ -5,6 +5,8 @@ import { mldsaKG, mldsaSign, mldsaVerify } from './crypto/mldsa.js';
 import { drLoad, drSave, drInit, drInitRecv, hkdf2, hkdf1 } from './crypto/ratchet.js';
 import { CRDT, idbSave, idbLoad, idbDelete } from './storage/crdt.js';
 import { hasEncryptedSKs, loadEncryptedSKs, saveEncryptedSKs, awaitPin, showPinScreen, pinKey, pinDel, tryBiometric, bioSupported, bioEnroll, bioUnlock, changePin } from './storage/pin.js';
+import { padPlain, unpadPlain, pqEncPadded, sendDummySealed, startPadding, stopPadding } from './transport/padding.js';
+import { markOnline, isOnline, getOnlinePeers, sendHeartbeat, startHeartbeat, stopHeartbeat, buildOnion, sendOnion } from './transport/onion.js';
 import { RELAYS, WS, CONN, relConn, resubAll, nostrPub, isReplay, iStat, setRp } from './transport/nostr.js';
 import { renderContacts, renderMsgs, renderPeers, showBadge } from './ui/render.js';
 import { addPeer, delPeer } from './ui/settings.js';
@@ -133,8 +135,8 @@ async function boot() {
   iStat();
 
   // Background start
-  try { if (G.startPadding) setTimeout(G.startPadding, 8000); } catch { }
-  try { if (G.startHeartbeat) setTimeout(G.startHeartbeat, 3000); } catch { }
+  try { if (startPadding) setTimeout(startPadding, 8000); } catch { }
+  try { if (startHeartbeat) setTimeout(startHeartbeat, 3000); } catch { }
 
   if (!G.MLDSAkeys) {
     setTimeout(async () => {
@@ -183,6 +185,34 @@ const updateMyKeys = () => {
 };
 G.updateMyKeys = updateMyKeys;
 
+const yieldUI = () => new Promise(res => setTimeout(res, 0));
+
+const sendHybrid = async (destPub, destKyberPk, obj) => {
+  const innerObj = { ...obj, _sender: { nostr: G._NK.pub, kyber: G._KKkeys.pk } };
+  const plaintext = JSON.stringify(innerObj);
+  await yieldUI();
+  const { ct, K } = kemE(destKyberPk);
+  const padded = padPlain(plaintext);
+  const { iv, ct: a } = await aesEnc(K, padded);
+  const enc = JSON.stringify({ v: 4, kem: ct, iv, ct: a });
+
+  const online = getOnlinePeers().filter(p => p !== destPub);
+  let sent = false;
+  if (online.length >= 1) {
+    try { sent = await sendOnion(destPub, enc); } catch { }
+  }
+  if (!sent) {
+    const ephNK = genNKP();
+    const ev = await buildEv(4, enc, [['p', destPub]], ephNK.priv, ephNK.pub);
+    let n = 0;
+    Object.values(WS).forEach(ws => { if (ws.readyState === 1) { ws.send(JSON.stringify(['EVENT', ev])); n++; } });
+    if (n === 0) return false;
+  }
+  const others = Object.keys(G._PEERS).filter(p => p !== destPub && G._PEERS[p]?.kyberPk);
+  others.forEach(p => setTimeout(() => sendDummySealed(p).catch(() => { }), 50 + Math.random() * 250));
+  return true;
+};
+
 const sendTxt = async () => {
   const inp = document.getElementById('minp'); const txt = inp.value.trim(); if (!txt || !G.AP) return;
   const peer = G._PEERS[G.AP];
@@ -193,7 +223,7 @@ const sendTxt = async () => {
   inp.value = ''; inp.style.height = 'auto';
   
   try {
-    const s = await nostrPub(G.AP, peer.kyberPk, op);
+    const s = await sendHybrid(G.AP, peer.kyberPk, op);
     if (!s) { G._OQ.push({ to: G.AP, op }); saveOQ(); document.getElementById('obar').classList.add('on'); }
     else { const ob = document.getElementById('obar'); if (ob) ob.classList.remove('on'); }
   } catch (err) {

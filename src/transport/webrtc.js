@@ -115,7 +115,7 @@ export class PCManager {
 }
 
 export let PCM = null;
-const inTransfers = {};
+export const inTransfers = {};
 let dcQ = [];
 
 function updateP2PStatus(s) {
@@ -149,8 +149,13 @@ export async function onDCMsg(msg, peerPub) {
     try {
       const dec = await pqDecBin(G._KKkeys.sk, msg.kem, msg.iv, msg.ct);
       buf.chunks[msg.idx] = dec; buf.received++;
+      
+      // Update local op if it exists (for sender/receiver)
       const op = G._C.ops.find(o => o.id === msg.tid);
-      if (op) { op.payload._prog = buf.received / msg.total; renderMsgs(); }
+      if (op) { op.payload._prog = buf.received / msg.total; }
+      
+      // Incoming progress for UI
+      if (G.AP === peerPub) renderMsgs(); 
       if (buf.received >= msg.total) {
         let sz = 0; buf.chunks.forEach(c => { if (c) sz += c.length; });
         const data = new Uint8Array(sz); let off = 0; buf.chunks.forEach(c => { if (c) { data.set(c, off); off += c.length; } });
@@ -158,7 +163,22 @@ export async function onDCMsg(msg, peerPub) {
         const { meta } = buf;
         const mt = meta.mime.startsWith('image') ? 'image' : meta.mime.startsWith('audio') ? 'voice' : 'file';
         const actualSrc = peerPub || 'unknown';
-        const op2 = { id: msg.tid, from: actualSrc, to: G._NK.pub, lam: G._C.lam + 1, vc: { [actualSrc]: G._C.lam + 1 }, type: mt, payload: { _bytes: data, name: meta.name, size: meta.size, mimeType: meta.mime, duration: meta.dur || 0 }, ts: Date.now() };
+        const op2 = { 
+          id: msg.tid, 
+          from: peerPub, 
+          to: G._NK.pub, 
+          lam: G._C.lam + 1, 
+          vc: { ...G._C.vc, [peerPub]: G._C.lam + 1 }, 
+          type: mt, 
+          payload: { 
+            _bytes: data, 
+            name: meta.name, 
+            size: meta.size, 
+            mimeType: meta.mime, 
+            duration: meta.dur || 0 
+          }, 
+          ts: Date.now() 
+        };
         idbSave(msg.tid, data, meta.mime);
         G._C.merge(op2); renderMsgs();
       }
@@ -228,9 +248,8 @@ async function _dcSendFile(item) {
       PCM.dc.send(JSON.stringify({ type: 'tchunk', tid, idx: i, total, kem, iv, ct }));
     } catch (e) { console.warn('Send tchunk failed', e); break; }
 
-    const op = G._C.ops.find(o => o.id === tid);
-    if (op) { op.payload._prog = (i + 1) / total; renderMsgs(); }
-    else if (item.localOp) { item.localOp.payload._prog = (i + 1) / total; renderMsgs(); }
+    if (item.localOp) { item.localOp.payload._prog = (i + 1) / total; }
+    if (G.AP === peerPub) renderMsgs();
     
     // Safety yield every 10 chunks
     if (i % 10 === 0) await new Promise(r => setTimeout(r, 0));

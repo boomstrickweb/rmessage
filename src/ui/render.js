@@ -62,9 +62,11 @@ export function renderMsgs() {
     const inQ = (G._OQ || []).some(q => q.op?.id === m.id);
     const foot = `<div class="mf"><span>${t}</span>${me ? `<span class="${inQ ? 'pc' : 'okc'}">${inQ ? '⏳' : '✓✓'}</span><span style="font-size:8px;color:var(--dim)">${m.type === 'text' ? 'relay' : 'TURN'}</span>` : '<span style="color:var(--pq);font-size:8px">PQ·E2E</span>'}</div>`;
     const type = m.type || 'text'; let body = '';
+    const inTransfer = G.inTransfers?.[m.id];
+    const prog = (m.payload?._prog !== undefined) ? m.payload._prog : inTransfer ? (inTransfer.received / inTransfer.meta.total) : undefined;
+    
     if (type === 'text') { body = `<div class="mb">${esc(m.payload?.text || '')}</div>`; }
     else if (type === 'image') {
-      const prog = m.payload?._prog;
       if (prog !== undefined && prog < 1) {
         body = `<div class="mb mb-prog"><div>${esc(m.payload?.name || 'Photo')}</div><div class="pb-w"><div class="pb" style="width:${Math.round(prog * 100)}%"></div></div><div class="pb-info"><span>${Math.round((m.payload?.size || 0) / 1024)}KB</span><span>${Math.round(prog * 100)}%</span></div></div>`;
       } else if (m.payload?._bytes) {
@@ -79,7 +81,6 @@ export function renderMsgs() {
     }
     else if (type === 'voice') {
       const dur = m.payload?.duration || '';
-      const prog = m.payload?._prog;
       const hasBytes = !!(m.payload?._bytes);
       if (prog !== undefined && prog < 1) {
         body = `<div class="mb mb-prog"><div>🎙 Sending voice...</div><div class="pb-w"><div class="pb" style="width:${Math.round(prog * 100)}%"></div></div><div class="pb-info"><span>${Math.round((m.payload?.size || 0) / 1024)}KB</span><span>${Math.round(prog * 100)}%</span></div></div>`;
@@ -92,7 +93,6 @@ export function renderMsgs() {
       }
     }
     else if (type === 'file') {
-      const prog = m.payload?._prog;
       if (prog !== undefined && prog < 1) {
         body = `<div class="mb mb-prog"><div>📎 ${esc(m.payload?.name || 'File')}</div><div class="pb-w"><div class="pb" style="width:${Math.round(prog * 100)}%"></div></div><div class="pb-info"><span>${Math.round((m.payload?.size || 0) / 1024)}KB</span><span>${Math.round(prog * 100)}%</span></div></div>`;
       } else {

@@ -14,6 +14,7 @@ export async function onEv(ev) {
   let str, realSenderPub = ev.pubkey;
   try {
     const parsed = JSON.parse(ev.content);
+    const fp = ev.pubkey;
 
     // Heartbeat ping (v:5)
     if (parsed.v === 5 && ev.kind === 4) {
@@ -46,10 +47,12 @@ export async function onEv(ev) {
               } catch { }
               if (!msgStr) msgStr = td(outerBytes);
               const obj = JSON.parse(msgStr);
+              if (obj.type === 'offer' || obj.type === 'answer' || obj.type === 'ice' || obj.type === 'dc_offer' || obj.type === 'dc_answer' || obj.type === 'reject' || obj.type === 'end' || obj.type === 'ice_restart' || obj.type === 'ice_restart_answer') {
+                obj.from = fp;
+                await handleSignaling(obj);
+                return;
+              }
               if (!obj.id || !obj.type || obj.type === '__pad__') return;
-              
-              const fp = obj._sender?.nostr || ev.pubkey;
-              if (fp === G._NK.pub) return;
               
               if (obj._sender?.nostr && obj._sender?.kyber) {
                 const sn = obj._sender.nostr; const sk = obj._sender.kyber;
@@ -62,13 +65,10 @@ export async function onEv(ev) {
               }
 
               obj.from = fp;
-
-              if (obj.type === 'offer' || obj.type === 'answer' || obj.type === 'ice' || obj.type === 'dc_offer' || obj.type === 'dc_answer' || obj.type === 'reject' || obj.type === 'end' || obj.type === 'ice_restart' || obj.type === 'ice_restart_answer') {
-                await handleSignaling(obj);
-                return;
+              if (G._C.merge(obj)) {
+                if (G.AP === fp) renderMsgs();
+                else { renderContacts(); showBadge(); }
               }
-
-              if (!obj.id || !obj.type || obj.type === '__pad__') return;
             }
           } catch (e) { console.warn('Onion final fail', e); }
         }
@@ -93,14 +93,13 @@ export async function onEv(ev) {
       try {
         const raw = await aesDec(kemD(parsed.kem, G._KKkeys.sk), parsed.iv, parsed.ct);
         str = td(raw);
-        console.log('Decrypted v3 signaling:', str);
       } catch { return; }
     } else { return; }
   } catch { return; }
 
   let obj; try { obj = JSON.parse(str); } catch { return; }
-  const fp = obj._sender?.nostr || realSenderPub;
-  if (fp === G._NK.pub) return;
+  const realFrom = obj._sender?.nostr || realSenderPub;
+  if (realFrom === G._NK.pub) return;
 
   if (obj._sender?.nostr && obj._sender?.kyber) {
     const sn = obj._sender.nostr; const sk = obj._sender.kyber;
@@ -112,7 +111,7 @@ export async function onEv(ev) {
     markOnline(sn);
   }
 
-  obj.from = fp;
+  obj.from = realFrom;
 
   if (obj.type === 'offer' || obj.type === 'answer' || obj.type === 'ice' || obj.type === 'dc_offer' || obj.type === 'dc_answer' || obj.type === 'reject' || obj.type === 'end' || obj.type === 'ice_restart' || obj.type === 'ice_restart_answer') {
     await handleSignaling(obj);
@@ -121,7 +120,7 @@ export async function onEv(ev) {
 
   if (!obj.id || !obj.type || obj.type === '__pad__') return;
   if (G._C.merge(obj)) {
-    if (G.AP === fp) renderMsgs();
+    if (G.AP === realFrom) renderMsgs();
     else { renderContacts(); showBadge(); }
   }
 }
@@ -131,6 +130,11 @@ async function handleSignaling(obj) {
   const peer = G._PEERS[from];
 
   if (type === 'offer') {
+    if (!peer && obj.kyberPk) {
+      G._PEERS[from] = { name: from.slice(0, 10), color: 'var(--pq)', kyberPk: obj.kyberPk };
+      localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
+      renderContacts();
+    }
     if (G.onIncomingCall) G.onIncomingCall(obj);
   } else if (type === 'answer' && PCM) {
     await PCM.setRemote(new RTCSessionDescription({ type: 'answer', sdp: obj.sdp })).catch(() => { });

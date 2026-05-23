@@ -80,6 +80,9 @@ export function resubAll() {
 export async function nostrPub(toPub, kyberPk, obj, kind = 4) {
   const G_ST = window;
   const payload = kind === 25050 ? { ...obj, kyberPk: G_ST._KKkeys.pk } : obj;
+  if (!payload._sender) {
+    payload._sender = { nostr: G_ST._NK.pub, kyber: G_ST._KKkeys.pk };
+  }
   const { ct, K } = kemE(kyberPk);
   const { iv, ct: a } = await aesEnc(K, JSON.stringify(payload));
   const enc = JSON.stringify({ v: 3, kem: ct, iv, ct: a });

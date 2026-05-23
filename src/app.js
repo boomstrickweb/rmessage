@@ -67,6 +67,7 @@ window.hideWipeModal = () => hideWipeModal();
 window.startWipeHold = (e) => startWipeHold(e);
 window.cancelWipeHold = () => cancelWipeHold();
 window.clearData = () => clearData();
+window.saveOQ = () => saveOQ();
 window.flushOQ = () => flushOQ();
 
 async function boot() {
@@ -206,10 +207,16 @@ const sendHybrid = async (destPub, destKyberPk, obj) => {
   }
   if (!sent) {
     const ephNK = genNKP();
-    const ev = await buildEv(4, enc, [['p', destPub]], ephNK.priv, ephNK.pub);
+    const payload = { ...obj, _sender: { nostr: G._NK.pub, kyber: G._KKkeys.pk } };
+    const plaintext = te(JSON.stringify(payload));
+    const { ct, K } = kemE(destKyber);
+    const { iv, ct: a } = await aesEnc(K, padPlain(plaintext));
+    const encFinal = JSON.stringify({ v: 4, kem: ct, iv, ct: a });
+    const ev = await buildEv(4, encFinal, [['p', destPub]], ephNK.priv, ephNK.pub);
     let n = 0;
     Object.values(WS).forEach(ws => { if (ws.readyState === 1) { ws.send(JSON.stringify(['EVENT', ev])); n++; } });
     if (n === 0) return false;
+    return true;
   }
   const others = Object.keys(G._PEERS).filter(p => p !== destPub && G._PEERS[p]?.kyberPk);
   others.forEach(p => setTimeout(() => sendDummySealed(p).catch(() => { }), 50 + Math.random() * 250));
@@ -253,7 +260,7 @@ const flushOQ = async () => {
   for (const item of q) {
     const peer = G._PEERS[item.to];
     if (peer?.kyberPk) {
-      const s = await nostrPub(item.to, peer.kyberPk, item.op);
+      const s = await sendHybrid(item.to, peer.kyberPk, item.op);
       if (!s) G._OQ.push(item);
     }
   }
@@ -461,8 +468,8 @@ G.onIncomingCall = async (obj) => {
     localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
     renderContacts();
   }
-  if (_callState !== 'idle') {
-    if (from !== _callPeer) showIncoming(from);
+  if (_callState !== 'idle' && from !== _callPeer) {
+    showIncoming(from);
     return;
   }
   _pendingOffer = { sdp: obj.sdp, from: from };

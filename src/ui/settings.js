@@ -66,27 +66,31 @@ export function addPeer() {
   let b;
   try { b = JSON.parse(inp.value.trim()); }
   catch { alert('Invalid JSON format.\nExample: {"nostr":"ab12...","kyber":"04ab..."}'); return; }
-  const nk = (b.nostr || b.nostrPub || '').toLowerCase().replace(/[^a-f0-9]/g, '');
+  const nk = (b.nostr || b.nostrPub || b.nostr_pub || '').toLowerCase().replace(/[^a-f0-9]/g, '');
   if (!nk || nk.length !== 64) { alert('Nostr key must be 64 hex characters.'); return; }
-  if (!b.kyber && !b.kyberPk) { alert('ML-KEM key missing (kyber field).'); return; }
-  const kpub = b.kyber || b.kyberPk;
-  if (kpub.length < 100) { alert('ML-KEM key is too short.'); return; }
+  const kpub = b.kyber || b.kyberPk || b.kyber_pk;
+  if (!kpub || kpub.length < 100) { alert('ML-KEM key missing (kyber field).'); return; }
   if (nk === window._NK?.pub) { alert('This is your own key!'); return; }
   const peers = window._PEERS;
-  const COLS_LOCAL = ['#e8ff00','#00aaff','#00ff88','#ff5588','#ff9900','#cc44ff'];
-  if (!peers[nk]) {
-    peers[nk] = { name: nk.slice(0, 10), kyberPk: kpub, color: COLS_LOCAL[Object.keys(peers).length % COLS_LOCAL.length], lastRead: 0 };
-    ktRecord(nk, null, kpub, 'key_first');
-  } else {
+  if (peers[nk]) {
     if (peers[nk].kyberPk && peers[nk].kyberPk !== kpub) {
-      const warn = `⚠ Key change detected for ${peers[nk].name}!\n\nOld: ${peers[nk].kyberPk.slice(0, 24)}\nNew: ${kpub.slice(0, 24)}\n\nAccept new key?`;
+      const warn = `⚠ Key change detected for ${peers[nk].name}!\n\nAccept new key?`;
       if (!confirm(warn)) return;
       ktRecord(nk, peers[nk].kyberPk, kpub, 'key_changed');
     }
     peers[nk].kyberPk = kpub;
+  } else {
+    peers[nk] = {
+      name: nk.slice(0, 10),
+      kyberPk: kpub,
+      color: COLS[Object.keys(peers).length % COLS.length],
+      lastRead: 0
+    };
+    ktRecord(nk, null, kpub, 'key_first');
   }
   savePeers();
   inp.value = '';
+  import('../transport/nostr.js').then(m => m.resubAll());
   renderPeers(); renderContacts();
 }
 
@@ -96,9 +100,10 @@ export function delPeer(npub) {
   chat.forEach(m => idbDelete(m.id));
   window._C.ops = window._C.ops.filter(o => !(o.from === npub || o.to === npub));
   window._C._save();
-  delete window._PEERS[npub]; savePeers();
+  delete window._PEERS[npub];
+  savePeers();
   renderPeers(); renderContacts();
-  if (window._AP === npub) window._goContacts?.();
+  if (window.AP === npub) window.goContacts?.();
 }
 
 function savePeers() {

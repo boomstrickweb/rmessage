@@ -59,13 +59,13 @@ export function renderContacts() {
         : '<span style="color:var(--grn);font-size:9px;margin-left:4px">✓</span>';
     return `<div class="ci">
       <div class="av" style="background:${p.color}22;color:${p.color}">${p.name[0].toUpperCase()}</div>
-      <div class="ci-i" onclick="openChat('${k}')">
+      <div class="ci-i" onclick="openChatFromContacts('${k}')">
         <div class="ci-n" style="color:${p.color}">${p.name}${verBadge}</div>
         <div class="ci-k">${k.slice(0, 22)}...</div>
         ${lt ? `<div class="ci-last">${lt}</div>` : ''}
       </div>
       <div class="ci-acts">${ur ? `<div class="ubadge">${ur}</div>` : ''}
-        <button class="ic-btn ic-chat" onclick="openChat('${k}')">💬</button>
+        <button class="ic-btn ic-chat" onclick="openChatFromContacts('${k}')">💬</button>
         <button class="ic-btn ic-call" onclick="startCall('${k}')">📞</button>
       </div>
     </div>`;
@@ -75,7 +75,7 @@ export function renderContacts() {
 
 export function renderMsgs() {
   const el = document.getElementById('msgs');
-  const AP = window._AP;
+  const AP = window.AP;
   const NK = window._NK;
   const C  = window._C;
   const OQ = window._OQ || [];

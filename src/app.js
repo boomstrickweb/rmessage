@@ -62,14 +62,53 @@ G.rejectCall    = rejectCall;
 G.endCall       = endCall;
 G.toggleMute    = toggleMute;
 G.toggleSpk     = toggleSpk;
-G.playVoice     = playVoice;
+G.playVoice     = (id) => playVoice(id);
+G.startCall     = (pub) => { startCall(pub); };
 G.addPeer       = addPeer;
 G.delPeer       = delPeer;
 G.openFP        = openFP;
 G.closeFP       = closeFP;
-G.openKT        = openKT;
-G.closeKT       = closeKT;
-G.setDisappearing = setDisappearing;
+G.verifyFP      = verifyFP;
+G.openKT        = () => { ktRender(); document.getElementById('ktModal').classList.add('show'); };
+G.closeKT       = () => document.getElementById('ktModal').classList.remove('show');
+G.setDisappearing = (val) => setDisappearing(val);
+G.emergencyWipe = emergencyWipe;
+G.exportKeys    = exportKeys;
+G.importKeys    = (file) => importKeys(file);
+G.copyBundle    = copyShareBundle;
+G.clearData     = () => {
+  if (!confirm('Clear all data? PIN and all keys will be deleted!')) return;
+  localStorage.clear(); sessionStorage.clear(); location.reload();
+};
+G.hideWipeModal = () => document.getElementById('wipeModal').classList.remove('show');
+G.openTTL       = () => {
+  const v = parseInt(localStorage.getItem('rl6_chatttl_' + G.AP) || '0');
+  ['0','3600','86400','604800'].forEach(val => {
+    const el = document.getElementById('ttlSel' + val);
+    if (el) el.textContent = (Number(val) * 1000 === v) ? '✓' : '—';
+  });
+  document.getElementById('ttlModal').classList.add('show');
+};
+G.closeTTL      = () => document.getElementById('ttlModal').classList.remove('show');
+G.setTTL        = (sec) => {
+  const ttl = sec * 1000;
+  localStorage.setItem('rl6_chatttl_' + G.AP, String(ttl));
+  updateDMBar();
+  G.closeTTL();
+  G.openTTL();
+};
+G.openImg = (url) => {
+  document.getElementById('imgVImg').src = url;
+  document.getElementById('imgV').classList.add('show');
+};
+G.closeImg = () => document.getElementById('imgV').classList.remove('show');
+G.onFile = async (ev) => {
+  const file = ev.target.files?.[0]; if (!file || !G.AP) return;
+  ev.target.value = '';
+  if (!G._PEERS?.[G.AP]?.kyberPk) { alert('Peer has no key yet. Send a text message first.'); return; }
+  await sendMedia(G.AP, file);
+};
+G.rsz = (el) => { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; };
 G._renderMsgs   = renderMsgs;
 G._idbSave      = idbSave;
 G._WS           = WS;
@@ -109,23 +148,28 @@ G.goSettings = () => {
   renderPeers();
   ktRender();
 };
-G._goContacts = G.goContacts;
 
-G.openChat = (pub) => {
+G.sendTxt       = sendTxt;
+G.openChat      = (pub) => {
   G.AP = pub;
   const peer = G._PEERS?.[pub];
   if (!peer) return;
-  document.getElementById('chatName').textContent  = peer.name;
-  document.getElementById('chatName').style.color  = peer.color;
-  document.getElementById('chatKey').textContent   = pub.slice(0, 28) + '...';
-  const fpBtn = document.getElementById('fpBtn');
-  fpBtn.className = 'fp-btn' + (peer.fpVerified ? ' verified' : ' unverified');
+  const nmEl = document.getElementById('chatName');
+  const keyEl = document.getElementById('chatKey');
+  if (nmEl) {
+    nmEl.textContent  = peer.name;
+    nmEl.style.color  = peer.color;
+  }
+  if (keyEl) keyEl.textContent = pub.slice(0, 28) + '...';
+  G.updateFPBtn(pub);
   peer.lastRead = Date.now();
   localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
   updateDMBar();
   showScreen('Chat');
   renderMsgs();
 };
+G.openChat = G.openChat;
+G.openChatFromContacts = G.openChat;
 
 G._showCallScreen = (pub, statusText, statusCls) => {
   const peer = G._PEERS?.[pub];
@@ -147,7 +191,8 @@ G.startCallFromChat = () => { if (G.AP) startCall(G.AP); };
 G.rsz = (el) => {
   el.style.height = 'auto';
   el.style.height = Math.min(el.scrollHeight, 120) + 'px';
-  document.getElementById('sbtn').disabled = !el.value.trim();
+  const sbtn = document.getElementById('sbtn');
+  if (sbtn) sbtn.disabled = !el.value.trim();
 };
 
 document.getElementById('minp').addEventListener('input', () => {
@@ -422,22 +467,33 @@ G.openFP = async (peerPub) => {
     verifyBtn.style.color = '#000';
   }
 
-  document.getElementById('fpModal').dataset.npub = peerPub;
   document.getElementById('fpModal').classList.add('show');
 };
 
 G.closeFP = () => { document.getElementById('fpModal').classList.remove('show'); _fpCurrentPeer = null; };
 
 G.confirmVerify = async () => {
-  const npub = document.getElementById('fpModal').dataset.npub || _fpCurrentPeer;
+  const npub = _fpCurrentPeer;
   if (!npub || !G._PEERS?.[npub]) return;
   const hash = await computeFP(npub); if (!hash) return;
-  G._PEERS[npub].fpVerified = fpToHex(hash);
+  const hexStr = fpToHex(hash);
+  G._PEERS[npub].fpVerified = hexStr;
   localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
   const fpBtn = document.getElementById('fpBtn');
-  if (G.AP === npub) { fpBtn.className = 'fp-btn verified'; fpBtn.textContent = '✓'; }
+  if (G.AP === npub) G.updateFPBtn(npub);
   G.closeFP();
   renderContacts(); renderPeers();
+};
+
+G.updateFPBtn = (peerPub) => {
+  const btn = document.getElementById('fpBtn'); if (!btn) return;
+  const peer = G._PEERS?.[peerPub]; if (!peer) return;
+  if (!peer.kyberPk) { btn.className = 'fp-btn'; btn.title = 'No key'; return; }
+  if (peer.fpVerified) {
+    btn.className = 'fp-btn verified'; btn.textContent = '✓'; btn.title = 'Key verified';
+  } else {
+    btn.className = 'fp-btn unverified'; btn.textContent = '🔐'; btn.title = 'Key NOT VERIFIED — click!';
+  }
 };
 
 // ── App boot ──
@@ -513,19 +569,9 @@ async function boot() {
   G._NK     = { priv: nkPriv, pub: nkPub };
   G._KKkeys = { pk: kkPub,    sk: kkSk  };
 
-  // ML-DSA keypair (for key transparency signatures)
-  document.getElementById('lmsg').textContent = 'Loading ML-DSA-44 (post-quantum signatures)...';
+  // Double Ratchet state
+  document.getElementById('lmsg').textContent = 'Double Ratchet state...';
   await yieldUI();
-  let mldsaSk = localStorage.getItem('rl6_mldsa_sk');
-  let mldsaPk = localStorage.getItem('rl6_mldsa_pk');
-  if (!mldsaSk) {
-    const kp = mldsaKG(); mldsaSk = kp.sk; mldsaPk = kp.pk;
-    localStorage.setItem('rl6_mldsa_sk', mldsaSk);
-    localStorage.setItem('rl6_mldsa_pk', mldsaPk);
-  }
-  G.MLDSAkeys = { pk: mldsaPk, sk: mldsaSk };
-
-  // CRDT
   G._C = CRDT.load(G._NK.pub);
 
   // Reload IDB bytes for any media ops
@@ -566,6 +612,29 @@ async function boot() {
 
   // Done
   document.getElementById('loading').style.display = 'none';
+  // Send resub to all relays
+  resubAll();
+
+  // Start traffic padding + heartbeat
+  setTimeout(startPadding, 8000);
+  setTimeout(startHeartbeat, 3000);
+
+  // Generate ML-DSA key in background — does NOT block app start
+  let mldsaSk = localStorage.getItem('rl6_mldsa_sk');
+  let mldsaPk = localStorage.getItem('rl6_mldsa_pk');
+  if (!mldsaSk || !mldsaPk) {
+    setTimeout(async () => {
+      try {
+        const dk = mldsaKG();
+        G._MLDSAkeys = dk;
+        localStorage.setItem('rl6_mldsa_sk', dk.sk);
+        localStorage.setItem('rl6_mldsa_pk', dk.pk);
+        console.log('ML-DSA-44 ready');
+      } catch (e) { console.warn('ML-DSA keygen failed', e); }
+    }, 100);
+  } else {
+    G._MLDSAkeys = { sk: mldsaSk, pk: mldsaPk };
+  }
 }
 
 boot().catch(e => {

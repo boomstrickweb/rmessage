@@ -46,7 +46,8 @@ export function relConn(url, onEvCallback) {
     const G_ST = window;
     ws.send(JSON.stringify(['REQ', hex(rnd(8)), { kinds: [4, 25050], '#p': [G_ST._NK.pub], limit: 50 }]));
     iStat();
-    // Flush OQ handled in app.js or here
+    if (window.flushOQ) window.flushOQ();
+    resubAll();
   };
 
   ws.onmessage = async e => {

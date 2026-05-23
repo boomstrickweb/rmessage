@@ -62,6 +62,7 @@ window.hideWipeModal = () => hideWipeModal();
 window.startWipeHold = (e) => startWipeHold(e);
 window.cancelWipeHold = () => cancelWipeHold();
 window.clearData = () => clearData();
+window.flushOQ = () => flushOQ();
 
 async function boot() {
   setLM('Initializing...');
@@ -129,6 +130,7 @@ async function boot() {
   renderContacts();
   document.getElementById('loading').style.display = 'none';
   RELAYS.forEach(url => relConn(url, onEv));
+  iStat();
 
   // Background start
   try { if (G.startPadding) setTimeout(G.startPadding, 8000); } catch { }
@@ -193,6 +195,7 @@ const sendTxt = async () => {
   try {
     const s = await nostrPub(G.AP, peer.kyberPk, op);
     if (!s) { G._OQ.push({ to: G.AP, op }); saveOQ(); document.getElementById('obar').classList.add('on'); }
+    else { const ob = document.getElementById('obar'); if (ob) ob.classList.remove('on'); }
   } catch (err) {
     console.warn('sendTxt failed', err);
     G._OQ.push({ to: G.AP, op }); saveOQ(); document.getElementById('obar').classList.add('on');
@@ -210,6 +213,22 @@ document.getElementById('minp').addEventListener('keydown', e => {
 });
 
 function saveOQ() { localStorage.setItem('rl6_oq', JSON.stringify(G._OQ)); }
+
+const flushOQ = async () => {
+  if (!G._OQ.length || !CONN.size) return;
+  const q = [...G._OQ]; G._OQ = [];
+  for (const item of q) {
+    const peer = G._PEERS[item.to];
+    if (peer?.kyberPk) {
+      const s = await nostrPub(item.to, peer.kyberPk, item.op);
+      if (!s) G._OQ.push(item);
+    }
+  }
+  saveOQ();
+  const ob = document.getElementById('obar');
+  if (ob) ob.classList.toggle('on', G._OQ.length > 0);
+  renderMsgs();
+};
 
 const onFile = (e) => {
   const f = e.target.files[0]; if (!f || !G.AP) return;

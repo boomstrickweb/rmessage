@@ -251,13 +251,15 @@ async function onEv(ev) {
   try {
     const parsed = JSON.parse(ev.content);
     // Simplified decryption for proof of concept
-    const K = kemD(parsed.kem, G._KKkeys.sk);
-    const raw = await aesDec(K, parsed.iv, parsed.ct);
-    const obj = JSON.parse(td(raw));
-    if (obj.type === '__pad__') return;
-    if (G._C.merge(obj)) {
-      if (G.AP === obj.from) renderMsgs();
-      else { renderContacts(); showBadge(); }
+  if (parsed.v === 3) {
+      const K = kemD(parsed.kem, G._KKkeys.sk);
+      const raw = await aesDec(K, parsed.iv, parsed.ct);
+      const obj = JSON.parse(td(raw));
+      if (obj.type === '__pad__') return;
+      if (G._C.merge(obj)) {
+        if (G.AP === obj.from) renderMsgs();
+        else { renderContacts(); showBadge(); }
+      }
     }
   } catch { }
 }

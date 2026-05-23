@@ -44,7 +44,7 @@ export function relConn(url, onEvCallback) {
     CONN.add(url);
     setRp(url, 'ok');
     const G = window;
-    ws.send(JSON.stringify(['REQ', hex(rnd(8)), { kinds: [4, 25050], '#p': [G.NK.pub], limit: 50 }]));
+    ws.send(JSON.stringify(['REQ', hex(rnd(8)), { kinds: [4, 25050], '#p': [G._NK.pub], limit: 50 }]));
     iStat();
     // Flush OQ handled in app.js or here
   };
@@ -71,7 +71,7 @@ export function resubAll() {
   Object.keys(WS).forEach(url => {
     const ws = WS[url];
     if (ws && ws.readyState === 1) {
-      ws.send(JSON.stringify(['REQ', hex(rnd(8)), { kinds: [4, 25050], '#p': [G.NK.pub], limit: 50 }]));
+      ws.send(JSON.stringify(['REQ', hex(rnd(8)), { kinds: [4, 25050], '#p': [G._NK.pub], limit: 50 }]));
     }
   });
 }
@@ -83,7 +83,7 @@ export async function nostrPub(toPub, kyberPk, obj, kind = 4) {
   const { iv, ct: a } = await aesEnc(K, JSON.stringify(payload));
   const enc = JSON.stringify({ v: 3, kem: ct, iv, ct: a });
   const tags = [['p', toPub], ['kyber', G.KKkeys.pk]];
-  const ev = await buildEv(kind, enc, tags, G.NK.priv, G.NK.pub);
+  const ev = await buildEv(kind, enc, tags, G._NK.priv, G._NK.pub);
   let s = 0;
   Object.values(WS).forEach(ws => {
     if (ws.readyState === 1) {

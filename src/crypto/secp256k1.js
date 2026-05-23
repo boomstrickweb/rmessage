@@ -1,4 +1,3 @@
-import { _bi, _bb, _sm, _spw, _SP, _SN, _SG } from './sha3.js'; // Assuming shared BigInt/Curve constants are there or defined locally
 import { rnd, hex, cat, fhex, wsha256 } from '../utils.js';
 
 // We'll define the curve here to avoid import issues if sha3.js is not yet populated

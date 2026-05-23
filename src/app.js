@@ -109,7 +109,7 @@ async function offerBioEnroll(pin) {
 
 // ── Global UI Exposure ──
 
-G.openChat = (pub) => {
+const openChat = (pub) => {
   G.AP = pub; const p = G._PEERS[pub]; if (!p) return;
   p.lastRead = Date.now(); localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
   document.getElementById('chatName').textContent = p.name;
@@ -122,10 +122,10 @@ G.openChat = (pub) => {
   renderContacts(); renderMsgs();
 };
 
-G.goContacts = () => { sl('scC', 'act'); sl('scChat', 'hr'); sl('scCall', 'hr'); sl('scS', 'hr'); na('nbC'); };
-G.goSettings = () => { sl('scS', 'act'); sl('scC', 'hl'); sl('scChat', 'hr'); sl('scCall', 'hr'); na('nbS'); renderPeers(); };
+const goContacts = () => { sl('scC', 'act'); sl('scChat', 'hr'); sl('scCall', 'hr'); sl('scS', 'hr'); na('nbC'); };
+const goSettings = () => { sl('scS', 'act'); sl('scC', 'hl'); sl('scChat', 'hr'); sl('scCall', 'hr'); na('nbS'); renderPeers(); };
 
-G.sendTxt = async () => {
+const sendTxt = async () => {
   const inp = document.getElementById('minp'); const txt = inp.value.trim(); if (!txt || !G.AP) return;
   const peer = G._PEERS[G.AP];
   if (!peer?.kyberPk) { alert('Peer key missing. Add via Settings.'); return; }
@@ -147,17 +147,13 @@ G.sendTxt = async () => {
 document.getElementById('minp').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 600) {
     e.preventDefault();
-    G.sendTxt();
+    sendTxt();
   }
 });
 
 function saveOQ() { localStorage.setItem('rl6_oq', JSON.stringify(G._OQ)); }
 
-G.addPeer = addPeer;
-G.delPeer = delPeer;
-G.rsz = rsz;
-
-G.onFile = (e) => {
+const onFile = (e) => {
   const f = e.target.files[0]; if (!f || !G.AP) return;
   e.target.value = '';
   // Simplified media send for now (just local show)
@@ -170,10 +166,10 @@ G.onFile = (e) => {
   });
 };
 
-G.openImg = (url) => { document.getElementById('imgVImg').src = url; document.getElementById('imgV').classList.add('show'); };
-G.closeImg = () => { document.getElementById('imgV').classList.remove('show'); };
+const openImg = (url) => { document.getElementById('imgVImg').src = url; document.getElementById('imgV').classList.add('show'); };
+const closeImg = () => { document.getElementById('imgV').classList.remove('show'); };
 
-G.copyBundle = async () => {
+const copyBundle = async () => {
   const bundle = JSON.stringify({ nostr: G._NK.pub, kyber: G._KKkeys.pk });
   const btn = document.getElementById('copyBtn');
   try { await navigator.clipboard.writeText(bundle); }
@@ -190,7 +186,7 @@ G.copyBundle = async () => {
 // ── Fingerprint UI ──
 
 let _fpCurrentPeer = null;
-G.openFP = async (peerPub) => {
+const openFP = async (peerPub) => {
   if (!peerPub || !G._PEERS[peerPub]) return;
   _fpCurrentPeer = peerPub;
   const peer = G._PEERS[peerPub];
@@ -215,15 +211,15 @@ G.openFP = async (peerPub) => {
   document.getElementById('fpModal').classList.add('show');
 };
 
-G.closeFP = () => { document.getElementById('fpModal').classList.remove('show'); _fpCurrentPeer = null; };
-G.confirmVerify = async () => {
+const closeFP = () => { document.getElementById('fpModal').classList.remove('show'); _fpCurrentPeer = null; };
+const confirmVerify = async () => {
   if (!_fpCurrentPeer) return;
   const peer = G._PEERS[_fpCurrentPeer]; if (!peer) return;
   const hash = await computeFP(_fpCurrentPeer); if (!hash) return;
   peer.fpVerified = fpToHex(hash);
   localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
   updateFPBtn(_fpCurrentPeer);
-  G.closeFP(); renderContacts();
+  closeFP(); renderContacts();
 };
 
 function updateFPBtn(peerPub) {
@@ -236,7 +232,7 @@ function updateFPBtn(peerPub) {
 
 // ── TTL UI ──
 
-G.openTTL = () => {
+const openTTL = () => {
   const ttl = parseInt(localStorage.getItem('rl6_ttl_' + G.AP) || '0');
   ['0', '3600', '86400', '604800'].forEach(v => {
     const el = document.getElementById('ttlSel' + v);
@@ -244,10 +240,10 @@ G.openTTL = () => {
   });
   document.getElementById('ttlModal').classList.add('show');
 };
-G.closeTTL = () => document.getElementById('ttlModal').classList.remove('show');
-G.setTTL = (sec) => {
+const closeTTL = () => document.getElementById('ttlModal').classList.remove('show');
+const setTTL = (sec) => {
   localStorage.setItem('rl6_ttl_' + G.AP, String(sec * 1000));
-  updateTTLBtn(); G.closeTTL();
+  updateTTLBtn(); closeTTL();
 };
 function updateTTLBtn() {
   const btn = document.getElementById('ttlBtn'); if (!btn) return;
@@ -260,8 +256,8 @@ function updateTTLBtn() {
 
 // ── Event Helpers ──
 
-function sl(id, cls) { const el = document.getElementById(id); if (el) el.className = 'screen ' + cls; }
-function na(id) { document.querySelectorAll('.nb').forEach(b => b.classList.remove('act')); const el = document.getElementById(id); if (el) el.classList.add('act'); }
+const sl = (id, cls) => { const el = document.getElementById(id); if (el) el.className = 'screen ' + cls; };
+const na = (id) => { document.querySelectorAll('.nb').forEach(b => b.classList.remove('act')); const el = document.getElementById(id); if (el) el.classList.add('act'); };
 
 // ── PIN Global Exposure ──
 // Mapping imported PIN functions directly to window object
@@ -269,31 +265,34 @@ window.pKey = pinKey;
 window.pDel = pinDel;
 window.tBio = tryBiometric;
 
-// Global functions for inline HTML event handlers
-window.onFile = (e) => G.onFile(e);
-window.openImg = (u) => G.openImg(u);
-window.closeImg = () => G.closeImg();
-window.sendTxt = () => G.sendTxt();
-window.openChat = (p) => G.openChat(p);
-window.goContacts = () => G.goContacts();
-window.goSettings = () => G.goSettings();
-window.openFP = (p) => G.openFP(p);
-window.closeFP = () => G.closeFP();
-window.confirmVerify = () => G.confirmVerify();
-window.copyBundle = () => G.copyBundle();
-window.addPeer = () => G.addPeer();
-window.delPeer = (k) => G.delPeer(k);
-window.rsz = (e) => G.rsz(e);
-window.pinKey = (n) => window.pKey(n);
-window.pinDel = () => window.pDel();
-window.tryBiometric = () => window.tBio();
-window.openTTL = () => G.openTTL();
-window.closeTTL = () => G.closeTTL();
-window.setTTL = (s) => G.setTTL(s);
-window.clearData = () => {
+// ── Local UI Helpers ──
+const clearData = () => {
   if (!confirm('Clear all data? PIN and all keys will be deleted!')) return;
   localStorage.clear(); sessionStorage.clear(); location.reload();
 };
 
 // ── Start ──
 document.addEventListener('DOMContentLoaded', boot);
+
+// ── Global Event Bindings ──
+window.onFile = (e) => onFile(e);
+window.openImg = (u) => openImg(u);
+window.closeImg = () => closeImg();
+window.sendTxt = () => sendTxt();
+window.openChat = (p) => openChat(p);
+window.goContacts = () => goContacts();
+window.goSettings = () => goSettings();
+window.openFP = (p) => openFP(p);
+window.closeFP = () => closeFP();
+window.confirmVerify = () => confirmVerify();
+window.copyBundle = () => copyBundle();
+window.addPeer = () => addPeer();
+window.delPeer = (k) => delPeer(k);
+window.rsz = (e) => rsz(e);
+window.pinKey = (n) => window.pKey(n);
+window.pinDel = () => window.pDel();
+window.tryBiometric = () => window.tBio();
+window.openTTL = () => openTTL();
+window.closeTTL = () => closeTTL();
+window.setTTL = (s) => setTTL(s);
+window.clearData = () => clearData();

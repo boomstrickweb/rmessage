@@ -66,7 +66,17 @@ G.playVoice     = (id) => playVoice(id);
 G.startCall     = (pub) => { startCall(pub); };
 G.addPeer       = addPeer;
 G.delPeer       = delPeer;
-G.confirmVerify = confirmVerify;
+G.confirmVerify = () => {
+  const npub = document.getElementById('fpModal').dataset.npub;
+  if (!npub || !G._PEERS?.[npub]) return;
+  G._PEERS[npub].fpVerified = true;
+  localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
+  document.getElementById('fpStatus').textContent = '✓ Verified';
+  document.getElementById('fpStatus').style.color = 'var(--grn)';
+  const fpBtn = document.getElementById('fpBtn');
+  if (G.AP === npub) fpBtn.className = 'fp-btn verified';
+  renderPeers(); renderContacts();
+};
 G.openFP        = openFP;
 G.closeFP       = closeFP;
 G.verifyFP      = verifyFP;
@@ -77,6 +87,15 @@ G.emergencyWipe = emergencyWipe;
 G.exportKeys    = exportKeys;
 G.importKeys    = (file) => importKeys(file);
 G.copyBundle    = copyShareBundle;
+G.onFile        = async (ev) => {
+  const file = ev.target.files?.[0]; if (!file || !G.AP) return;
+  ev.target.value = '';
+  if (!G._PEERS?.[G.AP]?.kyberPk) { alert('Peer has no key yet. Send a text message first.'); return; }
+  await sendMedia(G.AP, file);
+};
+G.startRec      = startRec;
+G.stopRec       = stopRec;
+G.cancelRec     = cancelRec;
 G.clearData     = () => {
   if (!confirm('Clear all data? PIN and all keys will be deleted!')) return;
   localStorage.clear(); sessionStorage.clear(); location.reload();
@@ -108,6 +127,8 @@ G._renderMsgs   = renderMsgs;
 G._idbSave      = idbSave;
 G._WS           = WS;
 G._CONN         = CONN;
+G._saveOQ       = _saveOQ;
+G._OQ           = _OQ;
 
 // ── Color palette for peer avatars ──
 
@@ -144,12 +165,41 @@ G.goSettings = () => {
   ktRender();
 };
 
-G.sendTxt       = sendTxt;
+G.sendTxt       = async () => {
+  const inp  = document.getElementById('minp');
+  const text = inp.value.trim();
+  if (!text || !G.AP) return;
+  const peer = G._PEERS?.[G.AP];
+  if (!peer?.kyberPk) {
+    alert('Peer has no key. Add their key bundle via ⚙ Settings → Add Peer.');
+    return;
+  }
+  inp.value  = ''; inp.style.height = 'auto';
+  document.getElementById('sbtn').disabled = true;
+  const op = G._C.add('text', { text }, G.AP);
+  renderMsgs();
+  renderContacts();
+  const fullOp = { ...op, _sender: { nostr: G._NK.pub, kyber: G._KKkeys.pk } };
+  if (CONN.size > 0) {
+    try {
+      await sendHybrid(G.AP, peer.kyberPk, fullOp);
+    } catch (e) {
+      console.error('Send failed:', e);
+      G._OQ.push({ to: G.AP, op: fullOp }); G._saveOQ();
+      document.getElementById('obar').classList.add('on');
+    }
+  } else {
+    G._OQ.push({ to: G.AP, op: fullOp }); G._saveOQ();
+    document.getElementById('obar').classList.add('on');
+  }
+  document.getElementById('sbtn').disabled = false;
+  document.getElementById('minp').focus();
+};
 
 document.getElementById('minp').addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 600) {
     e.preventDefault();
-    sendTxt();
+    G.sendTxt();
   }
 });
 
@@ -205,38 +255,6 @@ document.getElementById('minp').addEventListener('input', () => {
 
 // ── Send text message ──
 
-G.sendTxt = async () => {
-  const inp  = document.getElementById('minp');
-  const text = inp.value.trim();
-  if (!text || !G.AP) return;
-  const peer = G._PEERS?.[G.AP];
-  if (!peer?.kyberPk) {
-    alert('Peer has no key. Add their key bundle via ⚙ Settings → Add Peer.');
-    return;
-  }
-  inp.value  = ''; inp.style.height = 'auto';
-  document.getElementById('sbtn').disabled = true;
-  const op = G._C.add('text', { text }, G.AP);
-  renderMsgs();
-  renderContacts();
-  const fullOp = { ...op, _sender: { nostr: G._NK.pub, kyber: G._KKkeys.pk } };
-  if (CONN.size > 0) {
-    try {
-      await sendHybrid(G.AP, peer.kyberPk, fullOp);
-    } catch (e) {
-      console.error('Send failed:', e);
-      G._OQ.push({ to: G.AP, op: fullOp }); G._saveOQ();
-      document.getElementById('obar').classList.add('on');
-    }
-  } else {
-    G._OQ.push({ to: G.AP, op: fullOp }); G._saveOQ();
-    document.getElementById('obar').classList.add('on');
-  }
-  document.getElementById('sbtn').disabled = false;
-  document.getElementById('minp').focus();
-};
-
-async function sendTxt() { return G.sendTxt(); }
 
 async function _queueOrSend(toPub, kyberPk, op) {
   const peer = G._PEERS?.[toPub];
@@ -257,83 +275,28 @@ G._sendHybrid = sendHybrid;
 
 // ── File attachment ──
 
-G.onFile = async (ev) => {
-  const file = ev.target.files?.[0]; if (!file || !G.AP) return;
-  ev.target.value = '';
-  if (!G._PEERS?.[G.AP]?.kyberPk) { alert('Peer has no key yet. Send a text message first.'); return; }
-  await sendMedia(G.AP, file);
-};
-
 // ── Image viewer ──
-
-G.openImg = (url) => {
-  document.getElementById('imgVImg').src = url;
-  document.getElementById('imgV').classList.add('show');
-};
-G.closeImg = () => { document.getElementById('imgV').classList.remove('show'); };
 
 // ── Voice recording ──
 
-G.startRec = startRec;
-G.stopRec  = stopRec;
-G.cancelRec = cancelRec;
-
 // ── Copy key bundle ──
 
-G.copyBundle = () => {
-  const NK = G._NK, KK = G._KKkeys;
-  if (!NK || !KK) return;
-  const bundle = JSON.stringify({ nostrPub: NK.pub, kyberPk: KK.pk, v: 1 });
-  navigator.clipboard.writeText(bundle).then(() => {
-    const btn = document.getElementById('copyBtn');
-    btn.textContent = '✓ Copied!'; btn.classList.add('copy-ok');
-    setTimeout(() => { btn.textContent = '📋 \u00a0Copy Key Bundle (JSON)'; btn.classList.remove('copy-ok'); }, 2200);
-  }).catch(() => prompt('Copy this JSON:', bundle));
-};
-
 // ── Fingerprint confirm ──
-
-G.confirmVerify = () => {
-  const npub = document.getElementById('fpModal').dataset.npub;
-  if (!npub || !G._PEERS?.[npub]) return;
-  G._PEERS[npub].fpVerified = true;
-  localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
-  document.getElementById('fpStatus').textContent = '✓ Verified';
-  document.getElementById('fpStatus').style.color = 'var(--grn)';
-  const fpBtn = document.getElementById('fpBtn');
-  if (G.AP === npub) fpBtn.className = 'fp-btn verified';
-  renderPeers(); renderContacts();
-};
-
-async function confirmVerify() { return G.confirmVerify(); }
 
 // ── Disappearing Messages (per-chat) ──
 
 let _chatTTL = 0;
 
 G.openTTL = () => {
-  ['0','3600','86400','604800'].forEach(v => {
-    document.getElementById('ttlSel' + v).textContent = (Number(v) * 1000 === _chatTTL) ? '✓' : '—';
+  const v = parseInt(localStorage.getItem('rl6_ttl_' + G.AP) || '0');
+  ['0','3600','86400','604800'].forEach(val => {
+    const el = document.getElementById('ttlSel' + val);
+    if (el) el.textContent = (val === String(v)) ? '✓' : '—';
   });
   document.getElementById('ttlModal').classList.add('show');
 };
 
 G.closeTTL = () => document.getElementById('ttlModal').classList.remove('show');
-
-G.setTTL = (sec) => {
-  _chatTTL = sec * 1000;
-  localStorage.setItem('rl6_chatttl_' + G.AP, String(_chatTTL));
-  updateDMBar();
-  G.closeTTL();
-};
-
-function updateDMBar() {
-  if (!G.AP) return;
-  const v   = parseInt(localStorage.getItem('rl6_chatttl_' + G.AP) || '0');
-  _chatTTL  = v;
-  const bar = document.getElementById('dmBar');
-  bar.classList.toggle('on', v > 0);
-}
 
 // ── Emergency Wipe ──
 

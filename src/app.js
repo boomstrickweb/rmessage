@@ -44,6 +44,8 @@ window.confirmVerify = () => confirmVerify();
 window.copyBundle = () => copyBundle();
 window.startCall = (p) => startCall(p);
 window.startCallFromChat = () => startCallFromChat();
+window.answerCall = () => answerCall();
+window.rejectCall = () => rejectCall();
 window.endCall = () => endCall();
 window.toggleMute = () => toggleMute();
 window.toggleSpk = () => toggleSpk();
@@ -332,17 +334,40 @@ const playVoice = async (opId) => {
 
 // ── Call UI ──
 
-let _callPeer = null, _callState = 'idle', _localStream = null, _remoteAudio = null;
+let _callPeer = null, _callState = 'idle', _localStream = null, _remoteAudio = null, _pendingOffer = null;
+
+const setCallSt = (t, cls) => {
+  const el = document.getElementById('callSt');
+  if (el) { el.textContent = t; el.className = 'call-st' + (cls ? ' ' + cls : ''); }
+};
 
 const showCallScreen = (peerPub, status, cls) => {
   const peer = G._PEERS[peerPub]; if (!peer) return;
-  document.getElementById('callAv').style.background = `${peer.color}22`;
-  document.getElementById('callAv').style.color = peer.color;
-  document.getElementById('callAv').textContent = peer.name[0].toUpperCase();
-  document.getElementById('callNm').textContent = peer.name;
-  document.getElementById('callSt').textContent = status;
-  document.getElementById('callBg').className = 'call-bg ' + (cls || '');
-  sl('scCall', 'act'); na('');
+  const av = document.getElementById('callAv');
+  if (av) {
+    av.style.background = `${peer.color}22`;
+    av.style.color = peer.color;
+    av.textContent = peer.name[0].toUpperCase();
+  }
+  const nm = document.getElementById('callNm');
+  if (nm) nm.textContent = peer.name;
+  setCallSt(status, cls);
+  sl('scCall', 'act');
+  // Reset other screens
+  sl('scC', 'hl'); sl('scChat', 'hl'); sl('scS', 'hr');
+};
+
+const showIncoming = (pub) => {
+  const p = G._PEERS[pub]; if (!p) return;
+  const av = document.getElementById('incAv');
+  if (av) {
+    av.textContent = p.name[0].toUpperCase();
+    av.style.background = `${p.color}22`;
+    av.style.color = p.color;
+  }
+  const nm = document.getElementById('incName');
+  if (nm) { nm.textContent = p.name; nm.style.color = p.color; }
+  document.getElementById('incoming').classList.add('show');
 };
 
 const startCall = async (peerPub) => {
@@ -360,38 +385,33 @@ const startCall = async (peerPub) => {
     stream.getTracks().forEach(t => pcm.pc.addTrack(t, stream));
   } catch (err) {
     console.error('Mic access failed', err);
-    // Continue without local audio if needed, or fail. Usually fail for calls.
   }
   
   const offer = await pcm.pc.createOffer();
   await pcm.pc.setLocalDescription(offer);
   await waitForGathering(pcm.pc, 6000);
   const sdp = sanitizeSDP(pcm.pc.localDescription.sdp);
-  await nostrPub(peerPub, peer.kyberPk, { type: 'offer', from: G._NK.pub, sdp }, 25050);
-  document.getElementById('callSt').textContent = 'Waiting for answer...';
+  await nostrPub(peerPub, peer.kyberPk, { type: 'offer', from: G._NK.pub, sdp, kyberPk: G._KKkeys.pk }, 25050);
+  setCallSt('Waiting for answer... (TURN)', 'ring');
+  
+  // Timeout if no answer in 45s
+  setTimeout(() => {
+    if (_callState === 'calling') {
+      setCallSt('No answer', 'err');
+      setTimeout(() => endCall(), 2000);
+    }
+  }, 45000);
 };
 
 const startCallFromChat = () => { if (G.AP) startCall(G.AP); };
 
-const endCall = () => {
-  if (_callPeer && G._PEERS[_callPeer]?.kyberPk && _callState !== 'idle') {
-    nostrPub(_callPeer, G._PEERS[_callPeer].kyberPk, { type: 'end', from: G._NK.pub }, 25050).catch(() => { });
-  }
-  if (window.PCM) { window.PCM.close(); window.PCM = null; }
-  if (_localStream) { _localStream.getTracks().forEach(t => t.stop()); _localStream = null; }
-  _callPeer = null; _callState = 'idle';
-  goContacts();
-};
-
-G.onIncomingCall = async (obj) => {
-  const { from, sdp } = obj;
-  const peer = G._PEERS[from];
-  if (!confirm(`Incoming call from ${peer?.name || from.slice(0, 10)}. Answer?`)) {
-    if (peer?.kyberPk) nostrPub(from, peer.kyberPk, { type: 'reject', from: G._NK.pub }, 25050).catch(() => { });
-    return;
-  }
+const answerCall = async () => {
+  document.getElementById('incoming').classList.remove('show');
+  if (!_pendingOffer) return;
+  const { sdp, from } = _pendingOffer; _pendingOffer = null;
   _callPeer = from; _callState = 'connecting';
   showCallScreen(from, 'Answering...', 'ring');
+  const peer = G._PEERS[from];
   const pcm = new PCManager(true);
   window.PCM = pcm;
   await pcm.init(from, true);
@@ -410,11 +430,55 @@ G.onIncomingCall = async (obj) => {
   await waitForGathering(pcm.pc, 6000);
   const aSdp = sanitizeSDP(pcm.pc.localDescription.sdp);
   await nostrPub(from, peer.kyberPk, { type: 'answer', from: G._NK.pub, sdp: aSdp }, 25050);
-  document.getElementById('callSt').textContent = 'Connecting...';
+  setCallSt('Connecting... (TURN)', 'ring');
+};
+
+const rejectCall = () => {
+  document.getElementById('incoming').classList.remove('show');
+  if (_pendingOffer?.from) {
+    const p = G._PEERS[_pendingOffer.from];
+    if (p?.kyberPk) nostrPub(_pendingOffer.from, p.kyberPk, { type: 'reject', from: G._NK.pub }, 25050).catch(() => { });
+  }
+  _pendingOffer = null;
+};
+
+const endCall = () => {
+  if (_callPeer && G._PEERS[_callPeer]?.kyberPk && _callState !== 'idle') {
+    nostrPub(_callPeer, G._PEERS[_callPeer].kyberPk, { type: 'end', from: G._NK.pub }, 25050).catch(() => { });
+  }
+  if (window.PCM) { window.PCM.close(); window.PCM = null; }
+  if (_localStream) { _localStream.getTracks().forEach(t => t.stop()); _localStream = null; }
+  _callPeer = null; _callState = 'idle';
+  goContacts();
+};
+
+G.onIncomingCall = async (obj) => {
+  const { from } = obj;
+  const peer = G._PEERS[from];
+  if (!peer) {
+    G._PEERS[from] = { name: from.slice(0, 10), color: 'var(--pq)', kyberPk: obj.kyberPk || '' };
+    localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
+    renderContacts();
+  }
+  if (_callState !== 'idle') {
+    if (from !== _callPeer) showIncoming(from);
+    return;
+  }
+  _pendingOffer = { sdp: obj.sdp, from: from };
+  showIncoming(from);
+};
+
+G.onCallAnswer = () => {
+  _callState = 'connecting';
+  setCallSt('ICE gathering...', 'ring');
+};
+
+G.onCallReject = () => {
+  setCallSt('Rejected', 'err');
+  setTimeout(() => endCall(), 1500);
 };
 
 G.onCallEnd = () => {
-  alert('Call ended.');
   endCall();
 };
 
@@ -422,7 +486,7 @@ G.onRemoteStream = (stream) => {
   _remoteAudio = new Audio();
   _remoteAudio.srcObject = stream;
   _remoteAudio.play();
-  document.getElementById('callSt').textContent = 'Connected (Secure)';
+  setCallSt('Connected (Secure)', 'conn');
   _callState = 'connected';
 };
 

@@ -131,14 +131,10 @@ async function handleSignaling(obj) {
   const peer = G._PEERS[from];
 
   if (type === 'offer') {
-    if (!G._PEERS[from] && obj.kyberPk) {
-      G._PEERS[from] = { name: from.slice(0, 10), color: 'var(--pq)', kyberPk: obj.kyberPk };
-      localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
-      renderContacts();
-    }
     if (G.onIncomingCall) G.onIncomingCall(obj);
   } else if (type === 'answer' && PCM) {
     await PCM.setRemote(new RTCSessionDescription({ type: 'answer', sdp: obj.sdp })).catch(() => { });
+    if (G.onCallAnswer) G.onCallAnswer();
   } else if (type === 'ice_restart' && PCM) {
     try {
       await PCM.setRemote(new RTCSessionDescription({ type: 'offer', sdp: obj.sdp }));

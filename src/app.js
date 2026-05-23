@@ -360,11 +360,10 @@ const startCall = async (peerPub) => {
     stream.getTracks().forEach(t => pcm.pc.addTrack(t, stream));
   } catch (err) {
     console.error('Mic access failed', err);
-    alert('Could not access microphone.');
-    endCall(); return;
+    // Continue without local audio if needed, or fail. Usually fail for calls.
   }
   
-  const offer = await pcm.pc.createOffer({ offerToReceiveAudio: true });
+  const offer = await pcm.pc.createOffer();
   await pcm.pc.setLocalDescription(offer);
   await waitForGathering(pcm.pc, 6000);
   const sdp = sanitizeSDP(pcm.pc.localDescription.sdp);
@@ -404,8 +403,6 @@ G.onIncomingCall = async (obj) => {
     stream.getTracks().forEach(t => pcm.pc.addTrack(t, stream));
   } catch (err) {
     console.error('Mic access failed', err);
-    alert('Could not access microphone.');
-    endCall(); return;
   }
   
   const answer = await pcm.pc.createAnswer();

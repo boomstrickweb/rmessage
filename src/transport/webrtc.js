@@ -49,11 +49,18 @@ export class PCManager {
     this.peer = peerPub; this.iceQ = []; this.remoteSet = false;
     if (this.pc) try { this.pc.close(); } catch { }
     const turnServers = await getTurnServers();
-    const cfg = { iceServers: turnServers, iceTransportPolicy: 'relay', bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' };
+    const cfg = { 
+      iceServers: turnServers, 
+      iceTransportPolicy: 'relay', 
+      bundlePolicy: 'max-bundle', 
+      rtcpMuxPolicy: 'require',
+      sdpSemantics: 'unified-plan'
+    };
     this.pc = new RTCPeerConnection(cfg);
 
     if (withAudio) {
       this.pc.ontrack = e => { if (G.onRemoteStream) G.onRemoteStream(e.streams[0]); };
+      this.pc.addTransceiver('audio', { direction: 'sendrecv' });
     }
 
     if (!withAudio) {
@@ -65,7 +72,7 @@ export class PCManager {
     this.pc.onicecandidate = async e => {
       if (!e.candidate || !e.candidate.candidate) return;
       const p = G._PEERS[this.peer]; if (!p?.kyberPk) return;
-      await nostrPub(this.peer, p.kyberPk, { type: 'ice', candidate: e.candidate.toJSON() }, 25050);
+      nostrPub(this.peer, p.kyberPk, { type: 'ice', from: G._NK.pub, candidate: e.candidate.toJSON() }, 25050).catch(() => { });
     };
     this.pc.oniceconnectionstatechange = () => {
       if (this.pc?.iceConnectionState === 'failed') {
@@ -217,9 +224,14 @@ async function _dcSendFile(item) {
 
     const op = G._C.ops.find(o => o.id === tid);
     if (op) { op.payload._prog = (i + 1) / total; renderMsgs(); }
+    else if (item.localOp) { item.localOp.payload._prog = (i + 1) / total; renderMsgs(); }
+    
+    // Safety yield
+    if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
   }
   const op = G._C.ops.find(o => o.id === tid);
   if (op) { delete op.payload._prog; renderMsgs(); }
+  else if (item.localOp) { delete item.localOp.payload._prog; renderMsgs(); }
 }
 
 export async function ensureDC(peerPub) {

@@ -142,7 +142,7 @@ async function handleSignaling(obj) {
       await PCM.pc.setLocalDescription(answer);
       await waitForGathering(PCM.pc, 6000);
       if (peer?.kyberPk) {
-        await nostrPub(from, peer.kyberPk, { type: 'ice_restart_answer', sdp: sanitizeSDP(PCM.pc.localDescription.sdp) }, 25050);
+        await nostrPub(from, peer.kyberPk, { type: 'ice_restart_answer', from: G._NK.pub, sdp: sanitizeSDP(PCM.pc.localDescription.sdp) }, 25050);
       }
     } catch (e) { console.warn('ICE restart fail', e); }
   } else if (type === 'ice_restart_answer' && PCM) {
@@ -159,8 +159,8 @@ async function handleSignaling(obj) {
     const answer = await pcm.pc.createAnswer();
     await pcm.pc.setLocalDescription(answer);
     await waitForGathering(pcm.pc, 8000);
-    const sdp = pcm.pc.localDescription?.sdp || answer.sdp;
-    await nostrPub(from, peer.kyberPk, { type: 'dc_answer', sdp: sanitizeSDP(sdp) }, 25050);
+    const sdp = sanitizeSDP(pcm.pc.localDescription.sdp);
+    await nostrPub(from, peer.kyberPk, { type: 'dc_answer', from: G._NK.pub, sdp }, 25050);
   } else if (type === 'dc_answer' && PCM) {
     await PCM.setRemote(new RTCSessionDescription({ type: 'answer', sdp: obj.sdp })).catch(() => { });
   } else if (type === 'reject') {

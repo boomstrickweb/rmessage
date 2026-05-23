@@ -149,3 +149,28 @@ export async function aesDec(k, ivH, ctH) {
   const key = await crypto.subtle.importKey('raw', k, { name: 'AES-GCM' }, false, ['decrypt']);
   return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fhex(ivH) }, key, fhex(ctH)));
 }
+
+// MessageChannel yield — 5x faster than setTimeout(0), frees UI
+export function yieldUI() { return new Promise(r => { const ch = new MessageChannel(); ch.port1.onmessage = r; ch.port2.postMessage(0); }); }
+
+export async function pqEncBin(pkH, bytes) {
+  await yieldUI();
+  const { ct, K } = kemE(pkH);
+  const key = await _hkdfKey(K);
+  const iv = rnd(12);
+  const inp = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+  const enc = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, inp);
+  return { kem: ct, iv: hex(iv), ct: hex(new Uint8Array(enc)) };
+}
+
+export async function pqDecBin(skH, kem, iv, ct) {
+  await yieldUI();
+  const K = kemD(kem, skH);
+  const key = await _hkdfKey(K);
+  return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fhex(iv) }, key, fhex(ct)));
+}
+
+async function _hkdfKey(raw) {
+  const base = await crypto.subtle.importKey('raw', raw, { name: 'HKDF' }, false, ['deriveKey']);
+  return crypto.subtle.deriveKey({ name: 'HKDF', hash: 'SHA-256', salt: new Uint8Array(32), info: new Uint8Array(0) }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+}

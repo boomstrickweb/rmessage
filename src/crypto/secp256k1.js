@@ -1,8 +1,9 @@
 import { rnd, hex, cat, fhex, wsha256 } from '../utils.js';
 
-// We'll define the curve here to avoid import issues if sha3.js is not yet populated
+// NIST P-256 Curve Constants & Helpers
 const P = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEFFFFFC2Fn;
 const N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141n;
+
 const sm = (a, m = P) => ((a % m) + m) % m;
 const spw = (b, e, m = P) => {
   let r = 1n; b = sm(b, m);

@@ -8,6 +8,7 @@ import { hasEncryptedSKs, loadEncryptedSKs, saveEncryptedSKs, awaitPin, showPinS
 import { RELAYS, WS, CONN, relConn, resubAll, nostrPub, isReplay, iStat, setRp } from './transport/nostr.js';
 import { renderContacts, renderMsgs, renderPeers, showBadge } from './ui/render.js';
 import { addPeer, delPeer } from './ui/settings.js';
+import { onEv } from './transport/events.js';
 
 // Global state initialization
 G._PEERS = {};
@@ -245,24 +246,6 @@ function updateTTLBtn() {
 }
 
 // ── Event Helpers ──
-
-async function onEv(ev) {
-  if (isReplay(ev)) return;
-  try {
-    const parsed = JSON.parse(ev.content);
-    // Simplified decryption for proof of concept
-  if (parsed.v === 3) {
-      const K = kemD(parsed.kem, G._KKkeys.sk);
-      const raw = await aesDec(K, parsed.iv, parsed.ct);
-      const obj = JSON.parse(td(raw));
-      if (obj.type === '__pad__') return;
-      if (G._C.merge(obj)) {
-        if (G.AP === obj.from) renderMsgs();
-        else { renderContacts(); showBadge(); }
-      }
-    }
-  } catch { }
-}
 
 function sl(id, cls) { const el = document.getElementById(id); if (el) el.className = 'screen ' + cls; }
 function na(id) { document.querySelectorAll('.nb').forEach(b => b.classList.remove('act')); const el = document.getElementById(id); if (el) el.classList.add('act'); }

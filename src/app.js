@@ -251,9 +251,9 @@ function sl(id, cls) { const el = document.getElementById(id); if (el) el.classN
 function na(id) { document.querySelectorAll('.nb').forEach(b => b.classList.remove('act')); const el = document.getElementById(id); if (el) el.classList.add('act'); }
 
 // ── PIN Global Exposure ──
-G.pinKey = pinKey;
-G.pinDel = pinDel;
-G.tryBiometric = tryBiometric;
+G.pinKey_ = pinKey;
+G.pinDel_ = pinDel;
+G.tryBiometric_ = tryBiometric;
 
 // Global functions for inline HTML event handlers
 window.onFile = (e) => G.onFile(e);
@@ -270,9 +270,9 @@ window.copyBundle = () => G.copyBundle();
 window.addPeer = () => G.addPeer();
 window.delPeer = (k) => G.delPeer(k);
 window.rsz = (e) => G.rsz(e);
-window.pinKey = (n) => G.pinKey(n);
-window.pinDel = () => G.pinDel();
-window.tryBiometric = () => G.tryBiometric();
+window.pinKey = (n) => G.pinKey_(n);
+window.pinDel = () => G.pinDel_();
+window.tryBiometric = () => G.tryBiometric_();
 window.openTTL = () => G.openTTL();
 window.closeTTL = () => G.closeTTL();
 window.setTTL = (s) => G.setTTL(s);

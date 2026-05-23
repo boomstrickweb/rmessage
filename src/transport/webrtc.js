@@ -54,7 +54,8 @@ export class PCManager {
       iceTransportPolicy: 'relay', 
       bundlePolicy: 'max-bundle', 
       rtcpMuxPolicy: 'require',
-      sdpSemantics: 'unified-plan'
+      sdpSemantics: 'unified-plan',
+      iceCandidatePoolSize: 2
     };
     this.pc = new RTCPeerConnection(cfg);
 
@@ -195,20 +196,25 @@ async function _dcSendFile(item) {
   if (!PCM?.dcOpen()) return;
 
   const total = Math.ceil(data.length / CHUNK);
+  console.log(`Sending file: ${file.name}, total chunks: ${total}, tid: ${tid}`);
   try {
     PCM.dc.send(JSON.stringify({ type: 'tstart', tid, total, name: file.name, size: file.size, mime: file.type, dur: file._duration || 0 }));
   } catch (e) { console.warn('Send tstart failed', e); return; }
 
   for (let i = 0; i < total; i++) {
-    if (!PCM?.dcOpen()) break;
+    if (!PCM?.dcOpen()) {
+      console.warn('DC closed during transfer', tid);
+      break;
+    }
     
     // Low-tech backpressure
-    if (PCM.dc.bufferedAmount > 2 * 1024 * 1024) {
+    if (PCM.dc.bufferedAmount > 1 * 1024 * 1024) {
       await new Promise(r => {
+        let count = 0;
         const check = () => {
           if (!PCM?.dcOpen()) { r(); return; }
-          if (PCM.dc.bufferedAmount < 512 * 1024) r();
-          else setTimeout(check, 100);
+          if (PCM.dc.bufferedAmount < 256 * 1024 || count > 100) r();
+          else { count++; setTimeout(check, 50); }
         };
         check();
       });
@@ -226,8 +232,8 @@ async function _dcSendFile(item) {
     if (op) { op.payload._prog = (i + 1) / total; renderMsgs(); }
     else if (item.localOp) { item.localOp.payload._prog = (i + 1) / total; renderMsgs(); }
     
-    // Safety yield
-    if (i % 5 === 0) await new Promise(r => setTimeout(r, 0));
+    // Safety yield every 10 chunks
+    if (i % 10 === 0) await new Promise(r => setTimeout(r, 0));
   }
   const op = G._C.ops.find(o => o.id === tid);
   if (op) { delete op.payload._prog; renderMsgs(); }
@@ -236,6 +242,13 @@ async function _dcSendFile(item) {
 
 export async function ensureDC(peerPub) {
   if (PCM?.dcOpen() && PCM.peer === peerPub) return true;
+  if (PCM?.peer === peerPub && (PCM.pc?.iceConnectionState === 'checking' || PCM.pc?.iceConnectionState === 'connected' || PCM.pc?.iceConnectionState === 'new')) {
+    for (let i = 0; i < 30; i++) {
+      await new Promise(r => setTimeout(r, 500));
+      if (PCM?.dcOpen()) return true;
+      if (!PCM || PCM.peer !== peerPub) break;
+    }
+  }
   if (PCM) { try { PCM.close(); } catch { } PCM = null; }
   PCM = new PCManager(false);
   await PCM.init(peerPub, false);

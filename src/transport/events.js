@@ -62,10 +62,13 @@ export async function onEv(ev) {
               }
 
               obj.from = fp;
-              if (G._C.merge(obj)) {
-                if (G.AP === fp) renderMsgs();
-                else { renderContacts(); showBadge(); }
+
+              if (obj.type === 'offer' || obj.type === 'answer' || obj.type === 'ice' || obj.type === 'dc_offer' || obj.type === 'dc_answer' || obj.type === 'reject' || obj.type === 'end' || obj.type === 'ice_restart' || obj.type === 'ice_restart_answer') {
+                await handleSignaling(obj);
+                return;
               }
+
+              if (!obj.id || !obj.type || obj.type === '__pad__') return;
             }
           } catch (e) { console.warn('Onion final fail', e); }
         }
@@ -90,6 +93,7 @@ export async function onEv(ev) {
       try {
         const raw = await aesDec(kemD(parsed.kem, G._KKkeys.sk), parsed.iv, parsed.ct);
         str = td(raw);
+        console.log('Decrypted v3 signaling:', str);
       } catch { return; }
     } else { return; }
   } catch { return; }
@@ -108,14 +112,14 @@ export async function onEv(ev) {
     markOnline(sn);
   }
 
-  if (ev.kind === 25050 || obj.type === 'offer' || obj.type === 'answer' || obj.type === 'ice' || obj.type === 'dc_offer' || obj.type === 'dc_answer') {
-    obj.from = fp;
+  obj.from = fp;
+
+  if (obj.type === 'offer' || obj.type === 'answer' || obj.type === 'ice' || obj.type === 'dc_offer' || obj.type === 'dc_answer' || obj.type === 'reject' || obj.type === 'end' || obj.type === 'ice_restart' || obj.type === 'ice_restart_answer') {
     await handleSignaling(obj);
     return;
   }
 
   if (!obj.id || !obj.type || obj.type === '__pad__') return;
-  obj.from = fp;
   if (G._C.merge(obj)) {
     if (G.AP === fp) renderMsgs();
     else { renderContacts(); showBadge(); }

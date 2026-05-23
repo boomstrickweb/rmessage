@@ -103,13 +103,6 @@ G.openImg = (url) => {
   document.getElementById('imgV').classList.add('show');
 };
 G.closeImg = () => document.getElementById('imgV').classList.remove('show');
-G.onFile = async (ev) => {
-  const file = ev.target.files?.[0]; if (!file || !G.AP) return;
-  ev.target.value = '';
-  if (!G._PEERS?.[G.AP]?.kyberPk) { alert('Peer has no key yet. Send a text message first.'); return; }
-  await sendMedia(G.AP, file);
-};
-G.rsz = (el) => { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; };
 G._renderMsgs   = renderMsgs;
 G._idbSave      = idbSave;
 G._WS           = WS;
@@ -151,6 +144,7 @@ G.goSettings = () => {
 };
 
 G.sendTxt       = sendTxt;
+
 G.openChat      = (pub) => {
   G.AP = pub;
   const peer = G._PEERS?.[pub];
@@ -171,7 +165,6 @@ G.openChat      = (pub) => {
   showScreen('Chat');
   renderMsgs();
 };
-G.openChat = G.openChat;
 G.openChatFromContacts = G.openChat;
 
 G._showCallScreen = (pub, statusText, statusCls) => {
@@ -519,10 +512,17 @@ G.updateDMBar = () => {
 
 // ── App boot ──
 
+console.log('RELAY: app.js loaded');
+
 async function boot() {
-  document.getElementById('loading').style.display = 'flex';
-  document.getElementById('lmsg').textContent = 'Initialising ML-KEM-768...';
-  await yieldUI();
+  console.log('RELAY: boot() started');
+  try {
+    const loadingEl = document.getElementById('loading');
+    const lmsgEl = document.getElementById('lmsg');
+    
+    if (loadingEl) loadingEl.style.display = 'flex';
+    if (lmsgEl) lmsgEl.textContent = 'Initialising ML-KEM-768...';
+    await yieldUI();
 
   // Load peers + offline queue
   G._PEERS = {};
@@ -535,6 +535,7 @@ async function boot() {
   // Disappearing messages
   const dis = parseInt(localStorage.getItem('rl6_disappear') || '0');
   G._disappearMs = dis > 0 ? dis : 0;
+  if (G._disappearMs > 0) setInterval(runDisappearing, 60000);
 
   // WebRTC state
   G._PCM = null; G._callPeer = null; G._callState = 'idle'; G._muted = false;
@@ -618,13 +619,6 @@ async function boot() {
   RELAYS.forEach(u => relConn(u));
   setTimeout(_flushOQ, 4000);
 
-  // Traffic padding + heartbeat
-  startHeartbeat();
-  startPadding();
-
-  // Disappearing messages timer
-  if (G._disappearMs > 0) setInterval(runDisappearing, 60000);
-
   // Render
   renderContacts();
   ktRender();
@@ -656,9 +650,11 @@ async function boot() {
   } else {
     G._MLDSAkeys = { sk: mldsaSk, pk: mldsaPk };
   }
+  } catch (e) {
+    console.error('Boot error:', e);
+    const lmsgEl = document.getElementById('lmsg');
+    if (lmsgEl) lmsgEl.textContent = 'Startup error: ' + e.message;
+  }
 }
 
-boot().catch(e => {
-  console.error('Boot failed:', e);
-  document.getElementById('lmsg').textContent = 'Startup error: ' + e.message;
-});
+boot();

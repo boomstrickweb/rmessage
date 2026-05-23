@@ -48,3 +48,4 @@ export const SHAKE128 = (i, l) => _sp(1344, i, 0x1F, l);
 export const SHAKE256 = (i, l) => _sp(1088, i, 0x1F, l);
 export const SHA3_256 = i => _sp(1088, i, 0x06, 32);
 export const SHA3_512 = i => _sp(576, i, 0x06, 64);
+export const _SG = null;

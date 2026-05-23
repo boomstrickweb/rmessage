@@ -127,6 +127,13 @@ G._renderMsgs   = renderMsgs;
 G._idbSave      = idbSave;
 G._WS           = WS;
 G._CONN         = CONN;
+G._OQ           = [];
+G._saveOQ = () => {
+  try {
+    const safe = G._OQ.map(q => ({ to: q.to, op: { ...q.op, payload: { ...q.op.payload, _bytes: undefined } } }));
+    localStorage.setItem('rl6_oq', JSON.stringify(safe));
+  } catch {}
+};
 
 // ── Color palette for peer avatars ──
 
@@ -271,6 +278,8 @@ async function _queueOrSend(toPub, kyberPk, op) {
 }
 G._sendHybrid = sendHybrid;
 
+async function sendTxt() { return G.sendTxt(); }
+
 // ── File attachment ──
 
 // ── Image viewer ──
@@ -295,6 +304,8 @@ G.openTTL = () => {
 };
 
 G.closeTTL = () => document.getElementById('ttlModal').classList.remove('show');
+
+async function confirmVerify() { return G.confirmVerify(); }
 
 // ── Emergency Wipe ──
 
@@ -339,16 +350,6 @@ G.clearData = () => {
 };
 
 // ── Offline queue ──
-
-G._OQ = [];
-G._saveOQ = () => {
-  try {
-    const safe = G._OQ.map(q => ({ to: q.to, op: { ...q.op, payload: { ...q.op.payload, _bytes: undefined } } }));
-    localStorage.setItem('rl6_oq', JSON.stringify(safe));
-  } catch {}
-};
-const _saveOQ = G._saveOQ;
-const _OQ = G._OQ;
 
 function _loadOQ() {
   try { G._OQ = JSON.parse(localStorage.getItem('rl6_oq') || '[]'); } catch { G._OQ = []; }

@@ -96,7 +96,7 @@ export function renderMsgs() {
     const p   = window._PEERS?.[m.from];
     const col = me ? 'var(--acc)' : (p?.color || 'var(--pq)');
     const nm  = me ? 'Me' : (p?.name || m.from.slice(0, 10));
-    const t   = new Date(m.ts).toLocaleTimeString('en', { hour: '2-digit', minute: '2-digit' });
+    const t   = new Date(m.ts).toLocaleTimeString('az', { hour: '2-digit', minute: '2-digit', hour12: false });
     const inQ = OQ.some(q => q.op?.id === m.id);
     const foot = `<div class="mf"><span>${t}</span>${me
       ? `<span class="${inQ ? 'pc' : 'okc'}">${inQ ? '⏳' : '✓✓'}</span><span style="font-size:8px;color:var(--dim)">${m.type === 'text' ? 'relay' : 'TURN'}</span>`

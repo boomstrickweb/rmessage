@@ -73,11 +73,6 @@ export function addPeer() {
   if (nk === window._NK?.pub) { alert('This is your own key!'); return; }
   const peers = window._PEERS;
   if (peers[nk]) {
-    if (peers[nk].kyberPk && peers[nk].kyberPk !== kpub) {
-      const warn = `⚠ Key change detected for ${peers[nk].name}!\n\nAccept new key?`;
-      if (!confirm(warn)) return;
-      ktRecord(nk, peers[nk].kyberPk, kpub, 'key_changed');
-    }
     peers[nk].kyberPk = kpub;
   } else {
     peers[nk] = {
@@ -86,7 +81,6 @@ export function addPeer() {
       color: COLS[Object.keys(peers).length % COLS.length],
       lastRead: 0
     };
-    ktRecord(nk, null, kpub, 'key_first');
   }
   savePeers();
   inp.value = '';
@@ -95,15 +89,11 @@ export function addPeer() {
 }
 
 export function delPeer(npub) {
-  if (!confirm('Delete this peer and their message history?')) return;
-  const chat = window._C?.chat(window._NK?.pub, npub) || [];
-  chat.forEach(m => idbDelete(m.id));
-  window._C.ops = window._C.ops.filter(o => !(o.from === npub || o.to === npub));
-  window._C._save();
+  if (!confirm('Delete this peer?')) return;
   delete window._PEERS[npub];
   savePeers();
-  renderPeers(); renderContacts();
-  if (window.AP === npub) window.goContacts?.();
+  if (window.AP === npub) window.AP = null;
+  renderContacts(); renderPeers();
 }
 
 function savePeers() {

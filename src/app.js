@@ -82,18 +82,19 @@ G.clearData     = () => {
 };
 G.hideWipeModal = () => document.getElementById('wipeModal').classList.remove('show');
 G.openTTL       = () => {
-  const v = parseInt(localStorage.getItem('rl6_chatttl_' + G.AP) || '0');
+  const v = parseInt(localStorage.getItem('rl6_ttl_' + G.AP) || '0');
   ['0','3600','86400','604800'].forEach(val => {
     const el = document.getElementById('ttlSel' + val);
-    if (el) el.textContent = (Number(val) * 1000 === v) ? '✓' : '—';
+    if (el) el.textContent = (val === String(v)) ? '✓' : '—';
   });
   document.getElementById('ttlModal').classList.add('show');
 };
 G.closeTTL      = () => document.getElementById('ttlModal').classList.remove('show');
 G.setTTL        = (sec) => {
-  const ttl = sec * 1000;
-  localStorage.setItem('rl6_chatttl_' + G.AP, String(ttl));
-  updateDMBar();
+  if (sec === 0) localStorage.removeItem('rl6_ttl_' + G.AP);
+  else localStorage.setItem('rl6_ttl_' + G.AP, String(sec));
+  G.updateDMBar();
+  G.updateTTLBtn();
   G.closeTTL();
   G.openTTL();
 };
@@ -160,11 +161,13 @@ G.openChat      = (pub) => {
     nmEl.textContent  = peer.name;
     nmEl.style.color  = peer.color;
   }
-  if (keyEl) keyEl.textContent = pub.slice(0, 28) + '...';
+  if (keyEl) keyEl.textContent = pub;
   G.updateFPBtn(pub);
+  G.updateTTLBtn();
+  G.updateDMBar();
   peer.lastRead = Date.now();
   localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
-  updateDMBar();
+  renderContacts();
   showScreen('Chat');
   renderMsgs();
 };
@@ -492,7 +495,25 @@ G.updateFPBtn = (peerPub) => {
   if (peer.fpVerified) {
     btn.className = 'fp-btn verified'; btn.textContent = '✓'; btn.title = 'Key verified';
   } else {
-    btn.className = 'fp-btn unverified'; btn.textContent = '🔐'; btn.title = 'Key NOT VERIFIED — click!';
+    btn.className = 'fp-btn unverified'; btn.textContent = '⚠'; btn.title = 'Key NOT VERIFIED — click!';
+  }
+};
+
+G.updateTTLBtn = () => {
+  const btn = document.getElementById('ttlBtn'); if (!btn) return;
+  const ttl = parseInt(localStorage.getItem('rl6_ttl_' + G.AP) || '0');
+  btn.textContent = ttl > 0 ? '⏱' : '⏲';
+  btn.title = ttl > 0 ? 'Disappearing messages: ON' : 'Disappearing messages: OFF';
+};
+
+G.updateDMBar = () => {
+  const bar = document.getElementById('dmBar'); if (!bar) return;
+  const ttl = parseInt(localStorage.getItem('rl6_ttl_' + G.AP) || '0');
+  if (ttl > 0) {
+    bar.textContent = `⏱ Disappearing ON (${ttl >= 86400 ? (ttl/86400)+'d' : (ttl/3600)+'h'})`;
+    bar.classList.add('show');
+  } else {
+    bar.classList.remove('show');
   }
 };
 

@@ -4,9 +4,95 @@ import { renderMsgs, renderContacts, showBadge } from '../ui/render.js';
 import { markOnline, handleOnionRelay } from './onion.js';
 import { unpadPlain } from './padding.js';
 import { PCM, onDCMsg, sanitizeSDP, PCManager, setPCM, waitForGathering } from './webrtc.js';
-import { isReplay, nostrPub } from './nostr.js';
+import { drLoad, drSave, drInit, drInitRecv, hkdf2, hkdf1, drEncrypt, drDecrypt, stampDeniable, verifyDeniable } from '../crypto/ratchet.js';
+
+import { SHA3_256 } from '../crypto/sha3.js';
+import { mldsaSign } from '../crypto/mldsa.js';
 
 const G = window;
+
+// Key Transparency Log
+export let _ktLog = [];
+const KT_LOG_KEY = 'rl6_kt_log';
+
+export function ktLoad() {
+  try { _ktLog = JSON.parse(localStorage.getItem(KT_LOG_KEY)) || []; } catch { _ktLog = []; }
+}
+
+export function ktSave() {
+  try { localStorage.setItem(KT_LOG_KEY, JSON.stringify(_ktLog.slice(-200))); } catch { }
+}
+
+// Record a key event — signed with our ML-DSA key
+export async function ktRecord(peerPub, oldKyberPk, newKyberPk, event = 'key_seen') {
+  if (!G.MLDSAkeys) return;
+  const entry = {
+    ts: Date.now(),
+    peer: peerPub,
+    event,
+    oldHash: oldKyberPk ? hex(SHA3_256(te(oldKyberPk))).slice(0, 16) : null,
+    newHash: newKyberPk ? hex(SHA3_256(te(newKyberPk))).slice(0, 16) : null,
+    n: _ktLog.length
+  };
+  // Sign the entry with ML-DSA
+  try {
+    const msg = JSON.stringify({ ts: entry.ts, peer: entry.peer, newHash: entry.newHash, n: entry.n });
+    entry.sig = await mldsaSign(G.MLDSAkeys.sk, msg);
+  } catch { }
+  _ktLog.push(entry);
+  ktSave();
+}
+
+// Check if a peer's key has changed — returns 'new'|'changed'|'same'
+export function ktCheck(peerPub, kyberPk) {
+  const entries = _ktLog.filter(e => e.peer === peerPub);
+  if (!entries.length) return 'new';
+  const last = entries[entries.length - 1];
+  const newHash = hex(SHA3_256(te(kyberPk))).slice(0, 16);
+  return last.newHash === newHash ? 'same' : 'changed';
+}
+
+export function ktRender() {
+  const el = document.getElementById('ktLog'); if (!el) return;
+  const entries = [..._ktLog].reverse().slice(0, 20);
+  if (!entries.length) { el.innerHTML = '<div style="font-size:10px;color:var(--dim)">No records yet.</div>'; return; }
+  el.innerHTML = entries.map(e => {
+    const p = G._PEERS[e.peer]; const nm = p?.name || e.peer.slice(0, 10);
+    const t = new Date(e.ts).toLocaleString('en-GB', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const cls = e.event === 'key_changed' ? 'kt-warn' : e.event === 'key_first' ? 'kt-new' : 'kt-ok';
+    const icon = e.event === 'key_changed' ? '⚠' : e.event === 'key_first' ? '🆕' : '✓';
+    const msg = e.event === 'key_changed' ? '<b style="color:var(--red)">KEY CHANGED!</b>' : e.event === 'key_first' ? 'First Seen' : 'Key Confirmed';
+    return `<div class="kt-entry ${cls}">
+      <span style="color:var(--mut)">${t}</span> · <span style="color:var(--acc2)">${nm}</span><br>
+      ${icon} ${msg}
+      · <span style="color:var(--dim)">${e.newHash}</span>
+    </div>`;
+  }).join('');
+}
+
+const _seenIds = new Map();
+const REPLAY_WINDOW_MS = 5 * 60 * 1000;
+const REPLAY_CACHE_TTL = 10 * 60 * 1000;
+const REPLAY_CACHE_MAX = 2000;
+
+function _cleanReplayCache() {
+  const cutoff = Date.now() - REPLAY_CACHE_TTL;
+  for (const [id, ts] of _seenIds) {
+    if (ts < cutoff) _seenIds.delete(id);
+  }
+}
+setInterval(_cleanReplayCache, 60000);
+
+export function isReplay(ev) {
+  const now = Date.now();
+  const evTs = ev.created_at * 1000;
+  if (Math.abs(now - evTs) > REPLAY_WINDOW_MS) return true;
+  if (!ev.id) return true;
+  if (_seenIds.has(ev.id)) return true;
+  if (_seenIds.size >= REPLAY_CACHE_MAX) _seenIds.delete(_seenIds.keys().next().value);
+  _seenIds.set(ev.id, now);
+  return false;
+}
 
 export async function onEv(ev) {
   if (!G._KKkeys) return;
@@ -46,7 +132,15 @@ export async function onEv(ev) {
                 }
               } catch { }
               if (!msgStr) msgStr = td(outerBytes);
-              const obj = JSON.parse(msgStr);
+
+              let obj;
+              try {
+                const drPlain = await drDecrypt(fp, msgStr);
+                obj = JSON.parse(td(drPlain));
+              } catch {
+                obj = JSON.parse(msgStr);
+              }
+              
               if (obj.type === 'offer' || obj.type === 'answer' || obj.type === 'ice' || obj.type === 'dc_offer' || obj.type === 'dc_answer' || obj.type === 'reject' || obj.type === 'end' || obj.type === 'ice_restart' || obj.type === 'ice_restart_answer') {
                 obj.from = fp;
                 await handleSignaling(obj);
@@ -65,6 +159,7 @@ export async function onEv(ev) {
               }
 
               obj.from = fp;
+              await verifyDeniable(obj, fp);
               if (G._C.merge(obj)) {
                 if (G.AP === fp) renderMsgs();
                 else { renderContacts(); showBadge(); }
@@ -97,10 +192,14 @@ export async function onEv(ev) {
     } else { return; }
   } catch { return; }
 
-  let obj; try { obj = JSON.parse(str); } catch { return; }
-  const realFrom = obj._sender?.nostr || realSenderPub;
-  if (realFrom === G._NK.pub) return;
-
+  let obj;
+  try {
+    const drPlain = await drDecrypt(realFrom, str);
+    obj = JSON.parse(td(drPlain));
+  } catch {
+    try { obj = JSON.parse(str); } catch { return; }
+  }
+  
   if (obj._sender?.nostr && obj._sender?.kyber) {
     const sn = obj._sender.nostr; const sk = obj._sender.kyber;
     if (!G._PEERS[sn]) {
@@ -112,6 +211,7 @@ export async function onEv(ev) {
   }
 
   obj.from = realFrom;
+  await verifyDeniable(obj, realFrom);
 
   if (obj.type === 'offer' || obj.type === 'answer' || obj.type === 'ice' || obj.type === 'dc_offer' || obj.type === 'dc_answer' || obj.type === 'reject' || obj.type === 'end' || obj.type === 'ice_restart' || obj.type === 'ice_restart_answer') {
     await handleSignaling(obj);
@@ -124,6 +224,8 @@ export async function onEv(ev) {
     else { renderContacts(); showBadge(); }
   }
 }
+
+export { isReplay, nostrPub };
 
 async function handleSignaling(obj) {
   const { type, from } = obj;

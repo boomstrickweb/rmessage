@@ -5,6 +5,8 @@ const G = window;
 
 const COLS = ['#e8ff00', '#00ff88', '#b44fff', '#00aaff', '#ff3366', '#ff8800', '#00ffcc', '#ff00ff'];
 
+import { ktCheck, ktRecord } from '../transport/events.js';
+
 export function addPeer() {
   const inp = document.getElementById('peerInp');
   let b;
@@ -28,20 +30,27 @@ export function addPeer() {
     return;
   }
 
-  if (G._PEERS[nk]) {
-    G._PEERS[nk].kyberPk = b.kyber;
-    localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
+  const peer = G._PEERS[nk];
+  if (peer) {
+    const status = ktCheck(nk, b.kyber);
+    if (status === 'changed') {
+      if (!confirm('WARNING: This peer\'s key has changed! This could be a MITM attack. Continue?')) return;
+      ktRecord(nk, peer.kyberPk, b.kyber, 'key_changed');
+    }
+    peer.kyberPk = b.kyber;
+    G.savePeers();
     inp.value = '';
     renderContacts(); renderPeers();
     return;
   }
 
+  ktRecord(nk, null, b.kyber, 'key_first');
   G._PEERS[nk] = {
     name: nk.slice(0, 10),
     color: COLS[Object.keys(G._PEERS).length % COLS.length],
     kyberPk: b.kyber
   };
-  localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
+  G.savePeers();
   inp.value = '';
   resubAll();
   renderContacts(); renderPeers();

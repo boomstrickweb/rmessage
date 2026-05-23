@@ -24,6 +24,45 @@ const TTL_LABELS = { 0: 'Off', 3600: '1h', 86400: '24h', 604800: '7d' };
 
 // ── Application Boot ──
 
+// Move global exposures here to avoid ReferenceError if boot fails later
+window.onFile = (e) => onFile(e);
+window.openImg = (u) => openImg(u);
+window.closeImg = () => closeImg();
+window.startRec = (e) => startRec(e);
+window.stopRec = (e) => stopRec(e);
+window.cancelRec = () => cancelRec();
+window.playVoice = (id) => playVoice(id);
+window.sendTxt = () => sendTxt();
+window.openChat = (p) => openChat(p);
+window.goContacts = () => goContacts();
+window.goSettings = () => goSettings();
+window.openFP = (p) => openFP(p);
+window.closeFP = () => closeFP();
+window.confirmVerify = () => confirmVerify();
+window.copyBundle = () => copyBundle();
+window.startCall = (p) => startCall(p);
+window.startCallFromChat = () => startCallFromChat();
+window.endCall = () => endCall();
+window.toggleMute = () => toggleMute();
+window.toggleSpk = () => toggleSpk();
+window.confirmCall = () => { };
+window.addPeer = () => addPeer();
+window.delPeer = (k) => delPeer(k);
+window.rsz = (e) => rsz(e);
+window.pinKey = (n) => window.pKey(n);
+window.pinDel = () => window.pDel();
+window.tryBiometric = () => window.tBio();
+window.openTTL = () => openTTL();
+window.closeTTL = () => closeTTL();
+window.setTTL = (s) => setTTL(s);
+window.setDisappearing = (v) => setDisappearing(v);
+window.changePin = () => changePin();
+window.showWipeModal = () => showWipeModal();
+window.hideWipeModal = () => hideWipeModal();
+window.startWipeHold = (e) => startWipeHold(e);
+window.cancelWipeHold = () => cancelWipeHold();
+window.clearData = () => clearData();
+
 async function boot() {
   setLM('Initializing...');
   document.getElementById('loading').style.display = 'flex';
@@ -72,6 +111,8 @@ async function boot() {
   G._NK = { priv: nkPriv, pub: nkPub };
   G._KKkeys = { pk: kkPub, sk: kkSk };
 
+  if (G.updateMyKeys) G.updateMyKeys();
+
   try { G._PEERS = JSON.parse(localStorage.getItem('rl5_peers')) || {}; } catch { G._PEERS = {}; }
   try { G._OQ = JSON.parse(localStorage.getItem('rl6_oq')) || []; } catch { G._OQ = []; }
   try { const dk = JSON.parse(localStorage.getItem('rl6_mldsa_key')); if (dk?.pk && dk?.sk) G.MLDSAkeys = dk; } catch { }
@@ -80,9 +121,9 @@ async function boot() {
   try { if (G.ktLoad) G.ktLoad(); } catch { }
 
   G._C = CRDT.load(G._NK.pub);
-  document.getElementById('myNostr').textContent = G._NK.pub;
-  document.getElementById('myKyber').textContent = G._KKkeys.pk.slice(0, 64) + '...' + G._KKkeys.pk.slice(-16);
-  document.getElementById('topKey').textContent = G._NK.pub.slice(0, 10) + '...';
+  updateMyKeys();
+  const tk = document.getElementById('topKey');
+  if (tk) tk.textContent = G._NK.pub.slice(0, 10) + '...';
   document.getElementById('rpills').innerHTML = RELAYS.map(u => `<div class="rp" id="rp${btoa(u).replace(/\W/g, '')}"><div class="rdot"></div>${rn(u)}</div>`).join('');
   
   renderContacts();
@@ -110,6 +151,12 @@ async function offerBioEnroll(pin) {
 
 // ── Global UI Exposure ──
 
+// ── Local UI Helpers ──
+const clearData = () => {
+  if (!confirm('Clear all data? PIN and all keys will be deleted!')) return;
+  localStorage.clear(); sessionStorage.clear(); location.reload();
+};
+
 const openChat = (pub) => {
   G.AP = pub; const p = G._PEERS[pub]; if (!p) return;
   p.lastRead = Date.now(); localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
@@ -124,7 +171,15 @@ const openChat = (pub) => {
 };
 
 const goContacts = () => { sl('scC', 'act'); sl('scChat', 'hr'); sl('scCall', 'hr'); sl('scS', 'hr'); na('nbC'); };
-const goSettings = () => { sl('scS', 'act'); sl('scC', 'hl'); sl('scChat', 'hr'); sl('scCall', 'hr'); na('nbS'); renderPeers(); };
+const goSettings = () => { sl('scS', 'act'); sl('scC', 'hl'); sl('scChat', 'hr'); sl('scCall', 'hr'); na('nbS'); renderPeers(); if (G.updateMyKeys) G.updateMyKeys(); };
+
+const updateMyKeys = () => {
+  const n = document.getElementById('myNostr');
+  const k = document.getElementById('myKyber');
+  if (n && G._NK) n.textContent = G._NK.pub;
+  if (k && G._KKkeys) k.textContent = G._KKkeys.pk.slice(0, 64) + '...' + G._KKkeys.pk.slice(-16);
+};
+G.updateMyKeys = updateMyKeys;
 
 const sendTxt = async () => {
   const inp = document.getElementById('minp'); const txt = inp.value.trim(); if (!txt || !G.AP) return;
@@ -478,50 +533,5 @@ window.pKey = pinKey;
 window.pDel = pinDel;
 window.tBio = tryBiometric;
 
-// ── Local UI Helpers ──
-const clearData = () => {
-  if (!confirm('Clear all data? PIN and all keys will be deleted!')) return;
-  localStorage.clear(); sessionStorage.clear(); location.reload();
-};
-
 // ── Start ──
 document.addEventListener('DOMContentLoaded', boot);
-
-// ── Global Event Bindings ──
-window.onFile = (e) => onFile(e);
-window.openImg = (u) => openImg(u);
-window.closeImg = () => closeImg();
-window.startRec = (e) => startRec(e);
-window.stopRec = (e) => stopRec(e);
-window.cancelRec = () => cancelRec();
-window.playVoice = (id) => playVoice(id);
-window.sendTxt = () => sendTxt();
-window.openChat = (p) => openChat(p);
-window.goContacts = () => goContacts();
-window.goSettings = () => goSettings();
-window.openFP = (p) => openFP(p);
-window.closeFP = () => closeFP();
-window.confirmVerify = () => confirmVerify();
-window.copyBundle = () => copyBundle();
-window.startCall = (p) => startCall(p);
-window.startCallFromChat = () => startCallFromChat();
-window.endCall = () => endCall();
-window.toggleMute = () => toggleMute();
-window.toggleSpk = () => toggleSpk();
-window.confirmCall = () => { }; // Dummy for any legacy call
-window.addPeer = () => addPeer();
-window.delPeer = (k) => delPeer(k);
-window.rsz = (e) => rsz(e);
-window.pinKey = (n) => window.pKey(n);
-window.pinDel = () => window.pDel();
-window.tryBiometric = () => window.tBio();
-window.openTTL = () => openTTL();
-window.closeTTL = () => closeTTL();
-window.setTTL = (s) => setTTL(s);
-window.setDisappearing = (v) => setDisappearing(v);
-window.changePin = () => changePin();
-window.showWipeModal = () => showWipeModal();
-window.hideWipeModal = () => hideWipeModal();
-window.startWipeHold = (e) => startWipeHold(e);
-window.cancelWipeHold = () => cancelWipeHold();
-window.clearData = () => clearData();

@@ -1,4 +1,4 @@
-import { hex, rnd, fhex } from '../utils.js';
+import { hex, rnd, fhex, te } from '../utils.js';
 import { kemE, aesEnc } from '../crypto/mlkem.js';
 import { buildEv } from '../crypto/secp256k1.js';
 

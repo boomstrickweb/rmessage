@@ -1,4 +1,4 @@
-import { rnd, hex, fhex, cat } from '../utils.js';
+import { rnd, hex, fhex, cat, te } from '../utils.js';
 import { SHAKE128, SHAKE256, SHA3_256, SHA3_512 } from './sha3.js';
 
 const KQ = 3329, KN = 256, KK = 3, ET1 = 2, ET2 = 2, DU = 10, DV = 4;

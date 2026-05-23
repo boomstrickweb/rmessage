@@ -11,7 +11,7 @@ import { RELAYS, WS, CONN, relConn, resubAll, nostrPub, isReplay, iStat, setRp }
 import { renderContacts, renderMsgs, renderPeers, showBadge } from './ui/render.js';
 import { addPeer, delPeer } from './ui/settings.js';
 import { onEv } from './transport/events.js';
-import { sendMedia, ensureDC, addToDCQ, sanitizeSDP, PCManager } from './transport/webrtc.js';
+import { sendMedia, ensureDC, addToDCQ, sanitizeSDP, PCManager, waitForGathering } from './transport/webrtc.js';
 
 // Global state initialization
 G._PEERS = {};

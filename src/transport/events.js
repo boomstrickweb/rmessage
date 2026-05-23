@@ -1,4 +1,4 @@
-import { td, fhex } from '../utils.js';
+import { td, fhex, te } from '../utils.js';
 import { kemD, aesDec } from '../crypto/mlkem.js';
 import { renderMsgs, renderContacts, showBadge } from '../ui/render.js';
 import { markOnline, handleOnionRelay } from './onion.js';

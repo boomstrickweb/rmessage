@@ -122,7 +122,7 @@ export function waitForGathering(pc, timeout = 8000) {
   });
 }
 
-async function onDCMsg(msg, peerPub) {
+export async function onDCMsg(msg, peerPub) {
   if (msg.type === 'tstart') { inTransfers[msg.tid] = { meta: msg, chunks: new Array(msg.total), received: 0 }; }
   else if (msg.type === 'tchunk') {
     const buf = inTransfers[msg.tid]; if (!buf) return;

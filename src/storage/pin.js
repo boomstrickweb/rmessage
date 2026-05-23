@@ -150,6 +150,22 @@ function flashDots(cls) {
   setTimeout(updatePinDots, 600);
 }
 
+export async function changePin() {
+  if (!confirm('Change your PIN?')) return;
+  const r = await awaitPin('setup');
+  if (r && r.pin) {
+    const nk = JSON.parse(localStorage.getItem('rl5_nk'));
+    const kk = JSON.parse(localStorage.getItem('rl6_mldsa_key')); // or however keys are stored
+    // In modular version, we need to be careful what we are re-encrypting.
+    // Usually we'd need the current decrypted keys.
+    const currentPin = sessionStorage.getItem('rl6_session_pin');
+    if (!currentPin) { alert('Session expired. Please re-login.'); location.reload(); return; }
+    const keys = await loadEncryptedSKs(currentPin);
+    await saveEncryptedSKs(r.pin, keys.nkPriv, keys.kkSk);
+    alert('PIN changed successfully.');
+  }
+}
+
 export async function tryBiometric() {
   const pin = await bioUnlock();
   if (pin) {

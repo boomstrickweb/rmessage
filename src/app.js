@@ -4,11 +4,12 @@ import { kemKG, kemE, kemD, aesEnc, aesDec } from './crypto/mlkem.js';
 import { mldsaKG, mldsaSign, mldsaVerify } from './crypto/mldsa.js';
 import { drLoad, drSave, drInit, drInitRecv, hkdf2, hkdf1 } from './crypto/ratchet.js';
 import { CRDT, idbSave, idbLoad, idbDelete } from './storage/crdt.js';
-import { hasEncryptedSKs, loadEncryptedSKs, saveEncryptedSKs, awaitPin, showPinScreen, pinKey, pinDel, tryBiometric, bioSupported, bioEnroll, bioUnlock } from './storage/pin.js';
+import { hasEncryptedSKs, loadEncryptedSKs, saveEncryptedSKs, awaitPin, showPinScreen, pinKey, pinDel, tryBiometric, bioSupported, bioEnroll, bioUnlock, changePin } from './storage/pin.js';
 import { RELAYS, WS, CONN, relConn, resubAll, nostrPub, isReplay, iStat, setRp } from './transport/nostr.js';
 import { renderContacts, renderMsgs, renderPeers, showBadge } from './ui/render.js';
 import { addPeer, delPeer } from './ui/settings.js';
 import { onEv } from './transport/events.js';
+import { sendMedia, ensureDC, addToDCQ, sanitizeSDP, PCManager } from './transport/webrtc.js';
 
 // Global state initialization
 G._PEERS = {};
@@ -129,17 +130,19 @@ const sendTxt = async () => {
   const inp = document.getElementById('minp'); const txt = inp.value.trim(); if (!txt || !G.AP) return;
   const peer = G._PEERS[G.AP];
   if (!peer?.kyberPk) { alert('Peer key missing. Add via Settings.'); return; }
+  
   document.getElementById('sbtn').disabled = true;
   const op = G._C.add('text', { text: txt }, G.AP); renderMsgs();
   inp.value = ''; inp.style.height = 'auto';
-  if (CONN.size > 0) {
-    try {
-      const s = await nostrPub(G.AP, peer.kyberPk, op);
-      if (!s) { G._OQ.push({ to: G.AP, op }); saveOQ(); document.getElementById('obar').classList.add('on'); }
-    } catch { G._OQ.push({ to: G.AP, op }); saveOQ(); document.getElementById('obar').classList.add('on'); }
-  } else {
+  
+  try {
+    const s = await nostrPub(G.AP, peer.kyberPk, op);
+    if (!s) { G._OQ.push({ to: G.AP, op }); saveOQ(); document.getElementById('obar').classList.add('on'); }
+  } catch (err) {
+    console.warn('sendTxt failed', err);
     G._OQ.push({ to: G.AP, op }); saveOQ(); document.getElementById('obar').classList.add('on');
   }
+  
   iStat();
   document.getElementById('sbtn').disabled = false; inp.focus();
 };
@@ -156,18 +159,186 @@ function saveOQ() { localStorage.setItem('rl6_oq', JSON.stringify(G._OQ)); }
 const onFile = (e) => {
   const f = e.target.files[0]; if (!f || !G.AP) return;
   e.target.value = '';
-  // Simplified media send for now (just local show)
-  const mt = f.type.startsWith('image') ? 'image' : f.type.startsWith('audio') ? 'voice' : 'file';
-  const tid = hex(rnd(16));
-  f.arrayBuffer().then(ab => {
-    const data = new Uint8Array(ab);
-    const op = G._C.add(mt, { _bytes: data, name: f.name, size: f.size, mimeType: f.type, _prog: 1 }, G.AP);
-    op.id = tid; idbSave(tid, data, f.type); renderMsgs();
-  });
+  sendMedia(G.AP, f);
 };
 
 const openImg = (url) => { document.getElementById('imgVImg').src = url; document.getElementById('imgV').classList.add('show'); };
 const closeImg = () => { document.getElementById('imgV').classList.remove('show'); };
+
+// ── Voice UI ──
+
+let _mediaRec = null, _vChunks = [], _recStart = 0, _recCancelled = false;
+const AUDIO_MIME = 'audio/webm;codecs=opus';
+
+const startRec = (e) => {
+  if (e) e.preventDefault();
+  if (_mediaRec || !G.AP) return;
+  _recCancelled = false; _recStart = Date.now();
+  document.getElementById('voiceBtn').classList.add('rec');
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    _vChunks = [];
+    let opts = {};
+    if (MediaRecorder.isTypeSupported(AUDIO_MIME)) opts.mimeType = AUDIO_MIME;
+    _mediaRec = new MediaRecorder(stream, opts);
+    _mediaRec.ondataavailable = e => { if (e.data?.size > 0) _vChunks.push(e.data); };
+    _mediaRec.start(200);
+  }).catch(err => {
+    document.getElementById('voiceBtn').classList.remove('rec');
+    alert('Microphone access needed: ' + err.message);
+  });
+};
+
+const stopRec = (e) => {
+  if (e) e.preventDefault();
+  document.getElementById('voiceBtn').classList.remove('rec');
+  if (!_mediaRec || _mediaRec.state === 'inactive') { _mediaRec = null; return; }
+  const dur = Math.round((Date.now() - _recStart) / 1000);
+  if (dur < 1 || _recCancelled) {
+    if (_mediaRec.state !== 'inactive') _mediaRec.stop();
+    _mediaRec.stream.getTracks().forEach(t => t.stop()); _mediaRec = null; return;
+  }
+  _mediaRec.onstop = async () => {
+    const mime = _vChunks[0]?.type || AUDIO_MIME || 'audio/mp4';
+    const blob = new Blob(_vChunks, { type: mime });
+    _mediaRec.stream.getTracks().forEach(t => t.stop()); _mediaRec = null;
+    if (!G.AP || !G._PEERS[G.AP]?.kyberPk) return;
+    const ext = mime.includes('mp4') ? 'mp4' : mime.includes('webm') ? 'webm' : 'm4a';
+    const vFile = new File([blob], 'voice.' + ext, { type: mime });
+    vFile._duration = dur;
+    await sendMedia(G.AP, vFile);
+  };
+  _mediaRec.stop();
+};
+
+const cancelRec = () => {
+  _recCancelled = true; document.getElementById('voiceBtn').classList.remove('rec');
+  if (_mediaRec && _mediaRec.state !== 'inactive') {
+    _mediaRec.stop(); _mediaRec.stream?.getTracks().forEach(t => t.stop()); _mediaRec = null;
+  }
+};
+
+const playVoice = async (opId) => {
+  const op = G._C.ops.find(o => o.id === opId); if (!op) return;
+  const bytes = op.payload?._bytes;
+  if (!bytes) { alert('Audio still loading...'); return; }
+  const blob = new Blob([bytes], { type: op.payload?.mimeType || 'audio/webm' });
+  const url = URL.createObjectURL(blob);
+  const audio = new Audio(url); audio.play();
+};
+
+// ── Call UI ──
+
+let _callPeer = null, _callState = 'idle', _localStream = null, _remoteAudio = null;
+
+const showCallScreen = (peerPub, status, cls) => {
+  const peer = G._PEERS[peerPub]; if (!peer) return;
+  document.getElementById('callAv').style.background = `${peer.color}22`;
+  document.getElementById('callAv').style.color = peer.color;
+  document.getElementById('callAv').textContent = peer.name[0].toUpperCase();
+  document.getElementById('callNm').textContent = peer.name;
+  document.getElementById('callSt').textContent = status;
+  document.getElementById('callBg').className = 'call-bg ' + (cls || '');
+  sl('scCall', 'act'); na('');
+};
+
+const startCall = async (peerPub) => {
+  const peer = G._PEERS[peerPub];
+  if (!peer?.kyberPk) { alert('Peer key missing. Send a text message first.'); return; }
+  _callPeer = peerPub; _callState = 'calling';
+  showCallScreen(peerPub, 'Calling...', 'ring');
+  const pcm = new PCManager(true);
+  window.PCM = pcm;
+  await pcm.init(peerPub, true);
+  
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    _localStream = stream;
+    stream.getTracks().forEach(t => pcm.pc.addTrack(t, stream));
+  } catch (err) {
+    console.error('Mic access failed', err);
+    alert('Could not access microphone.');
+    endCall(); return;
+  }
+  
+  const offer = await pcm.pc.createOffer({ offerToReceiveAudio: true });
+  await pcm.pc.setLocalDescription(offer);
+  await waitForGathering(pcm.pc, 6000);
+  const sdp = sanitizeSDP(pcm.pc.localDescription.sdp);
+  await nostrPub(peerPub, peer.kyberPk, { type: 'offer', from: G._NK.pub, sdp }, 25050);
+  document.getElementById('callSt').textContent = 'Waiting for answer...';
+};
+
+const startCallFromChat = () => { if (G.AP) startCall(G.AP); };
+
+const endCall = () => {
+  if (_callPeer && G._PEERS[_callPeer]?.kyberPk && _callState !== 'idle') {
+    nostrPub(_callPeer, G._PEERS[_callPeer].kyberPk, { type: 'end' }, 25050).catch(() => { });
+  }
+  if (window.PCM) { window.PCM.close(); window.PCM = null; }
+  if (_localStream) { _localStream.getTracks().forEach(t => t.stop()); _localStream = null; }
+  _callPeer = null; _callState = 'idle';
+  goContacts();
+};
+
+G.onIncomingCall = async (obj) => {
+  const { from, sdp } = obj;
+  const peer = G._PEERS[from];
+  if (!confirm(`Incoming call from ${peer?.name || from.slice(0, 10)}. Answer?`)) {
+    if (peer?.kyberPk) nostrPub(from, peer.kyberPk, { type: 'reject' }, 25050).catch(() => { });
+    return;
+  }
+  _callPeer = from; _callState = 'connecting';
+  showCallScreen(from, 'Answering...', 'ring');
+  const pcm = new PCManager(true);
+  window.PCM = pcm;
+  await pcm.init(from, true);
+  await pcm.setRemote(new RTCSessionDescription({ type: 'offer', sdp }));
+  
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    _localStream = stream;
+    stream.getTracks().forEach(t => pcm.pc.addTrack(t, stream));
+  } catch (err) {
+    console.error('Mic access failed', err);
+    alert('Could not access microphone.');
+    endCall(); return;
+  }
+  
+  const answer = await pcm.pc.createAnswer();
+  await pcm.pc.setLocalDescription(answer);
+  await waitForGathering(pcm.pc, 6000);
+  const aSdp = sanitizeSDP(pcm.pc.localDescription.sdp);
+  await nostrPub(from, peer.kyberPk, { type: 'answer', sdp: aSdp }, 25050);
+  document.getElementById('callSt').textContent = 'Connecting...';
+};
+
+G.onCallEnd = () => {
+  alert('Call ended.');
+  endCall();
+};
+
+G.onRemoteStream = (stream) => {
+  _remoteAudio = new Audio();
+  _remoteAudio.srcObject = stream;
+  _remoteAudio.play();
+  document.getElementById('callSt').textContent = 'Connected (Secure)';
+  _callState = 'connected';
+};
+
+const toggleMute = () => {
+  if (!_localStream) return;
+  const t = _localStream.getAudioTracks()[0];
+  t.enabled = !t.enabled;
+  const btn = document.getElementById('muteBtn');
+  btn.classList.toggle('on', !t.enabled);
+  btn.textContent = t.enabled ? '🎙' : '🔇';
+};
+
+const toggleSpk = () => {
+  const btn = document.getElementById('spkBtn');
+  btn.classList.toggle('on');
+  // Browser speaker toggle is limited, usually just UI feedback or setSinkId if supported
+};
 
 const copyBundle = async () => {
   const bundle = JSON.stringify({ nostr: G._NK.pub, kyber: G._KKkeys.pk });
@@ -195,20 +366,34 @@ const openFP = async (peerPub) => {
   const hexStr = fpToHex(hash);
   const verified = peer.fpVerified === hexStr;
 
-  document.getElementById('fpEmojis').innerHTML = emojis.map(e => `<div class="fp-em">${e}</div>`).join('');
-  document.getElementById('fpHex').textContent = hexStr;
+  const emojiDiv = document.getElementById('fpEmojis');
+  if (emojiDiv) emojiDiv.innerHTML = emojis.map(e => `<div class="fp-em">${e}</div>`).join('');
+  
+  const hexEl = document.getElementById('fpHex');
+  if (hexEl) hexEl.textContent = hexStr;
+  
   const statusEl = document.getElementById('fpStatus');
+  const verifyBtn = document.getElementById('fpVerifyBtn');
+  
   if (verified) {
-    statusEl.innerHTML = `<div class="fp-ok">✓ Verified. Connection is secure.</div>`;
-    document.getElementById('fpVerifyBtn').textContent = '✓ Verified';
-    document.getElementById('fpVerifyBtn').style.background = 'var(--b2)';
+    if (statusEl) statusEl.innerHTML = `<div class="fp-ok">✓ Verified. Connection is secure.</div>`;
+    if (verifyBtn) {
+      verifyBtn.textContent = '✓ Verified';
+      verifyBtn.style.background = 'var(--b2)';
+    }
   } else {
-    statusEl.innerHTML = `<div class="fp-warn">⚠ Not verified. Compare with peer!</div>`;
-    document.getElementById('fpVerifyBtn').textContent = '✓ Verify';
-    document.getElementById('fpVerifyBtn').style.background = 'var(--grn)';
+    if (statusEl) statusEl.innerHTML = `<div class="fp-warn">⚠ Not verified. Compare with peer!</div>`;
+    if (verifyBtn) {
+      verifyBtn.textContent = '✓ Verify';
+      verifyBtn.style.background = 'var(--grn)';
+    }
   }
-  document.getElementById('fpSubtitle').innerHTML = `Compare these emojis with <b>${peer.name}</b>.`;
-  document.getElementById('fpModal').classList.add('show');
+  
+  const subEl = document.getElementById('fpSubtitle');
+  if (subEl) subEl.innerHTML = `Compare these emojis with <b>${peer.name}</b>.`;
+  
+  const modal = document.getElementById('fpModal');
+  if (modal) modal.classList.add('show');
 };
 
 const closeFP = () => { document.getElementById('fpModal').classList.remove('show'); _fpCurrentPeer = null; };
@@ -245,6 +430,9 @@ const setTTL = (sec) => {
   localStorage.setItem('rl6_ttl_' + G.AP, String(sec * 1000));
   updateTTLBtn(); closeTTL();
 };
+const setDisappearing = (val) => {
+  localStorage.setItem('rl6_ttl_global', val);
+};
 function updateTTLBtn() {
   const btn = document.getElementById('ttlBtn'); if (!btn) return;
   const ttl = parseInt(localStorage.getItem('rl6_ttl_' + G.AP) || '0');
@@ -253,6 +441,31 @@ function updateTTLBtn() {
   if (ttl > 0) { bar.classList.add('on'); bar.textContent = '⏱ Messages vanish after ' + TTL_LABELS[ttl / 1000]; }
   else { bar.classList.remove('on'); }
 }
+
+// ── Emergency Wipe UI ──
+
+let _wipeTimer = null, _wipeStart = 0;
+const showWipeModal = () => document.getElementById('wipeModal').classList.add('show');
+const hideWipeModal = () => { cancelWipeHold(); document.getElementById('wipeModal').classList.remove('show'); };
+
+const startWipeHold = (e) => {
+  if (e) e.preventDefault();
+  _wipeStart = Date.now();
+  document.getElementById('wipeBar').style.transition = 'width 3s linear';
+  document.getElementById('wipeBar').style.width = '100%';
+  _wipeTimer = setTimeout(async () => {
+    localStorage.clear(); sessionStorage.clear();
+    document.getElementById('wipeHint').textContent = 'DESTROYING...';
+    document.getElementById('wipeBtn').style.background = 'var(--red)';
+    setTimeout(() => location.reload(), 1500);
+  }, 3000);
+};
+
+const cancelWipeHold = () => {
+  clearTimeout(_wipeTimer);
+  document.getElementById('wipeBar').style.transition = 'none';
+  document.getElementById('wipeBar').style.width = '0%';
+};
 
 // ── Event Helpers ──
 
@@ -278,6 +491,10 @@ document.addEventListener('DOMContentLoaded', boot);
 window.onFile = (e) => onFile(e);
 window.openImg = (u) => openImg(u);
 window.closeImg = () => closeImg();
+window.startRec = (e) => startRec(e);
+window.stopRec = (e) => stopRec(e);
+window.cancelRec = () => cancelRec();
+window.playVoice = (id) => playVoice(id);
 window.sendTxt = () => sendTxt();
 window.openChat = (p) => openChat(p);
 window.goContacts = () => goContacts();
@@ -286,6 +503,12 @@ window.openFP = (p) => openFP(p);
 window.closeFP = () => closeFP();
 window.confirmVerify = () => confirmVerify();
 window.copyBundle = () => copyBundle();
+window.startCall = (p) => startCall(p);
+window.startCallFromChat = () => startCallFromChat();
+window.endCall = () => endCall();
+window.toggleMute = () => toggleMute();
+window.toggleSpk = () => toggleSpk();
+window.confirmCall = () => { }; // Dummy for any legacy call
 window.addPeer = () => addPeer();
 window.delPeer = (k) => delPeer(k);
 window.rsz = (e) => rsz(e);
@@ -295,4 +518,10 @@ window.tryBiometric = () => window.tBio();
 window.openTTL = () => openTTL();
 window.closeTTL = () => closeTTL();
 window.setTTL = (s) => setTTL(s);
+window.setDisappearing = (v) => setDisappearing(v);
+window.changePin = () => changePin();
+window.showWipeModal = () => showWipeModal();
+window.hideWipeModal = () => hideWipeModal();
+window.startWipeHold = (e) => startWipeHold(e);
+window.cancelWipeHold = () => cancelWipeHold();
 window.clearData = () => clearData();

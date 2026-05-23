@@ -198,4 +198,26 @@ export async function ensureDC(peerPub) {
 
 export function addToDCQ(item) { dcQ.push(item); processDCQ(); }
 
+export async function sendMedia(peerPub, file) {
+  const peer = G._PEERS[peerPub];
+  if (!peer?.kyberPk) { alert('Peer key missing. Send a text message first.'); return; }
+  const MAX_FILE_SIZE = 25 * 1024 * 1024;
+  if (file.size > MAX_FILE_SIZE) { alert('File too large. Max 25MB'); return; }
+
+  const mt = file.type.startsWith('image') ? 'image' : file.type.startsWith('audio') ? 'voice' : 'file';
+  const tid = hex(rnd(16));
+  const ab = await file.arrayBuffer();
+  const data = new Uint8Array(ab);
+  
+  const localOp = G._C.add(mt, {
+    _bytes: data, name: file.name, size: file.size,
+    mimeType: file.type, duration: file._duration || 0, _prog: 0
+  }, peerPub);
+  localOp.id = tid;
+  idbSave(tid, data, file.type);
+  renderMsgs();
+
+  addToDCQ({ peerPub, file, tid, data, localOp });
+}
+
 export function setPCM(val) { PCM = val; }

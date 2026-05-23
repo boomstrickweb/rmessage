@@ -3,8 +3,8 @@ import { kemD, aesDec } from '../crypto/mlkem.js';
 import { renderMsgs, renderContacts, showBadge } from '../ui/render.js';
 import { markOnline, handleOnionRelay } from './onion.js';
 import { unpadPlain } from './padding.js';
-import { PCM } from './webrtc.js';
-import { isReplay } from './nostr.js';
+import { PCM, onDCMsg, sanitizeSDP, PCManager, setPCM, waitForGathering } from './webrtc.js';
+import { isReplay, nostrPub } from './nostr.js';
 
 const G = window;
 
@@ -27,6 +27,7 @@ export async function onEv(ev) {
           else { renderContacts(); showBadge(); }
         }
       } else if (ev.kind === 25050) {
+        obj.from = ev.pubkey; // Attach sender pubkey for signaling
         await handleSignaling(obj);
       }
     }
@@ -64,10 +65,30 @@ export async function onEv(ev) {
 }
 
 async function handleSignaling(obj) {
-  if (!PCM) return;
-  if (obj.type === 'ice') {
-    if (obj.candidate) await PCM.addICE(obj.candidate);
-  } else if (obj.type === 'dc_offer') {
-    // Handle P2P offer...
+  const { type, from } = obj;
+  const peer = G._PEERS[from];
+  
+  if (type === 'offer') {
+    if (G.onIncomingCall) G.onIncomingCall(obj);
+  } else if (type === 'answer' && PCM) {
+    await PCM.setRemote(new RTCSessionDescription({ type: 'answer', sdp: obj.sdp }));
+  } else if (type === 'ice' && PCM) {
+    await PCM.addICE(new RTCIceCandidate(obj.candidate));
+  } else if (type === 'dc_offer') {
+    if (!peer?.kyberPk) return;
+    if (PCM) { try { PCM.close(); } catch { } }
+    const pcm = new PCManager(false);
+    setPCM(pcm);
+    await pcm.init(from, false);
+    await pcm.setRemote(new RTCSessionDescription({ type: 'offer', sdp: obj.sdp }));
+    const answer = await pcm.pc.createAnswer();
+    await pcm.pc.setLocalDescription(answer);
+    await waitForGathering(pcm.pc, 8000);
+    const sdp = pcm.pc.localDescription?.sdp || answer.sdp;
+    await nostrPub(from, peer.kyberPk, { type: 'dc_answer', sdp: sanitizeSDP(sdp) }, 25050);
+  } else if (type === 'dc_answer' && PCM) {
+    await PCM.setRemote(new RTCSessionDescription({ type: 'answer', sdp: obj.sdp }));
+  } else if (type === 'end') {
+    if (G.onCallEnd) G.onCallEnd();
   }
 }

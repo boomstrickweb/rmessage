@@ -66,6 +66,7 @@ G.playVoice     = (id) => playVoice(id);
 G.startCall     = (pub) => { startCall(pub); };
 G.addPeer       = addPeer;
 G.delPeer       = delPeer;
+G.confirmVerify = confirmVerify;
 G.openFP        = openFP;
 G.closeFP       = closeFP;
 G.verifyFP      = verifyFP;
@@ -144,6 +145,13 @@ G.goSettings = () => {
 };
 
 G.sendTxt       = sendTxt;
+
+document.getElementById('minp').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 600) {
+    e.preventDefault();
+    sendTxt();
+  }
+});
 
 G.openChat      = (pub) => {
   G.AP = pub;
@@ -228,6 +236,8 @@ G.sendTxt = async () => {
   document.getElementById('minp').focus();
 };
 
+async function sendTxt() { return G.sendTxt(); }
+
 async function _queueOrSend(toPub, kyberPk, op) {
   const peer = G._PEERS?.[toPub];
   if (!kyberPk || !CONN.size) {
@@ -295,6 +305,8 @@ G.confirmVerify = () => {
   renderPeers(); renderContacts();
 };
 
+async function confirmVerify() { return G.confirmVerify(); }
+
 // ── Disappearing Messages (per-chat) ──
 
 let _chatTTL = 0;
@@ -335,6 +347,9 @@ G.showWipeModal = () => {
 };
 
 G.hideWipeModal = () => document.getElementById('wipeModal').classList.remove('show');
+
+G.startWipeHold = (e) => startWipeHold(e);
+G.cancelWipeHold = () => cancelWipeHold();
 
 G.startWipeHold = (e) => {
   if (e?.preventDefault) e.preventDefault();

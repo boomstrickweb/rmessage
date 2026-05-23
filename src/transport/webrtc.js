@@ -49,16 +49,18 @@ export class PCManager {
     this.peer = peerPub; this.iceQ = []; this.remoteSet = false;
     if (this.pc) try { this.pc.close(); } catch { }
     const turnServers = await getTurnServers();
-    const cfg = { iceServers: turnServers, iceTransportPolicy: 'relay' };
+    const cfg = { iceServers: turnServers, iceTransportPolicy: 'relay', bundlePolicy: 'max-bundle', rtcpMuxPolicy: 'require' };
     this.pc = new RTCPeerConnection(cfg);
 
     if (withAudio) {
-      // Audio stream logic (simplified for transport layer)
       this.pc.ontrack = e => { if (G.onRemoteStream) G.onRemoteStream(e.streams[0]); };
     }
 
-    this.dc = this.pc.createDataChannel('media', { ordered: true, maxRetransmits: 30 });
-    this._setupDC(this.dc);
+    if (!withAudio) {
+      this.dc = this.pc.createDataChannel('media', { ordered: true });
+      this._setupDC(this.dc);
+    }
+    
     this.pc.ondatachannel = e => { this.dc = e.channel; this._setupDC(this.dc); };
     this.pc.onicecandidate = async e => {
       if (!e.candidate || !e.candidate.candidate) return;
@@ -87,13 +89,18 @@ export class PCManager {
     };
     ch.onopen = () => { updateP2PStatus('open'); processDCQ(); };
     ch.onclose = () => updateP2PStatus('closed');
+    ch.onerror = (e) => console.error('DC Error:', e);
   }
   async setRemote(desc) {
+    if (!this.pc) return;
     await this.pc.setRemoteDescription(desc); this.remoteSet = true;
     for (const c of this.iceQ) { try { await this.pc.addIceCandidate(c); } catch { } }
     this.iceQ = [];
   }
-  async addICE(c) { this.remoteSet ? await this.pc.addIceCandidate(c).catch(() => { }) : this.iceQ.push(c); }
+  async addICE(c) { 
+    if (!this.pc) return;
+    this.remoteSet ? await this.pc.addIceCandidate(c).catch(() => { }) : this.iceQ.push(c); 
+  }
   dcOpen() { return this.dc?.readyState === 'open'; }
   send(s) { if (this.dcOpen()) this.dc.send(s); }
   close() { try { if (this.pc) this.pc.close(); } catch { } this.pc = null; this.dc = null; }
@@ -158,9 +165,17 @@ export async function onDCMsg(msg, peerPub) {
 async function processDCQ() {
   if (processDCQ._running) return;
   processDCQ._running = true;
-  while (dcQ.length && PCM?.dcOpen()) {
-    const item = dcQ.shift();
-    await _dcSendFile(item);
+  while (dcQ.length) {
+    const item = dcQ[0];
+    const ok = await ensureDC(item.peerPub);
+    if (ok && PCM?.dcOpen()) {
+      dcQ.shift();
+      await _dcSendFile(item);
+    } else {
+      console.warn('DC not ready for', item.peerPub);
+      await new Promise(r => setTimeout(r, 5000));
+      if (!dcQ.length) break;
+    }
   }
   processDCQ._running = false;
 }
@@ -173,14 +188,33 @@ async function _dcSendFile(item) {
   if (!PCM?.dcOpen()) return;
 
   const total = Math.ceil(data.length / CHUNK);
-  PCM.dc.send(JSON.stringify({ type: 'tstart', tid, total, name: file.name, size: file.size, mime: file.type, dur: file._duration || 0 }));
+  try {
+    PCM.dc.send(JSON.stringify({ type: 'tstart', tid, total, name: file.name, size: file.size, mime: file.type, dur: file._duration || 0 }));
+  } catch (e) { console.warn('Send tstart failed', e); return; }
 
   for (let i = 0; i < total; i++) {
     if (!PCM?.dcOpen()) break;
+    
+    // Low-tech backpressure
+    if (PCM.dc.bufferedAmount > 2 * 1024 * 1024) {
+      await new Promise(r => {
+        const check = () => {
+          if (!PCM?.dcOpen()) { r(); return; }
+          if (PCM.dc.bufferedAmount < 512 * 1024) r();
+          else setTimeout(check, 100);
+        };
+        check();
+      });
+    }
+
     const chunk = data.slice(i * CHUNK, (i + 1) * CHUNK);
     const { kem, iv, ct } = await pqEncBin(peer.kyberPk, chunk);
     if (!PCM?.dcOpen()) break;
-    PCM.dc.send(JSON.stringify({ type: 'tchunk', tid, idx: i, total, kem, iv, ct }));
+    
+    try {
+      PCM.dc.send(JSON.stringify({ type: 'tchunk', tid, idx: i, total, kem, iv, ct }));
+    } catch (e) { console.warn('Send tchunk failed', e); break; }
+
     const op = G._C.ops.find(o => o.id === tid);
     if (op) { op.payload._prog = (i + 1) / total; renderMsgs(); }
   }
@@ -198,7 +232,7 @@ export async function ensureDC(peerPub) {
   await waitForGathering(PCM.pc, 8000);
   const sdp = sanitizeSDP(PCM.pc.localDescription.sdp);
   const p = G._PEERS[peerPub]; if (!p?.kyberPk) return false;
-  await nostrPub(peerPub, p.kyberPk, { type: 'dc_offer', sdp }, 25050);
+  await nostrPub(peerPub, p.kyberPk, { type: 'dc_offer', from: G._NK.pub, sdp }, 25050);
   return new Promise(res => {
     let t = setTimeout(() => { clearInterval(i); res(false); }, 30000);
     let i = setInterval(() => { if (PCM?.dcOpen()) { clearTimeout(t); clearInterval(i); res(true); } }, 200);

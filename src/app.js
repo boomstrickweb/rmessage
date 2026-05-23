@@ -376,7 +376,7 @@ const startCallFromChat = () => { if (G.AP) startCall(G.AP); };
 
 const endCall = () => {
   if (_callPeer && G._PEERS[_callPeer]?.kyberPk && _callState !== 'idle') {
-    nostrPub(_callPeer, G._PEERS[_callPeer].kyberPk, { type: 'end' }, 25050).catch(() => { });
+    nostrPub(_callPeer, G._PEERS[_callPeer].kyberPk, { type: 'end', from: G._NK.pub }, 25050).catch(() => { });
   }
   if (window.PCM) { window.PCM.close(); window.PCM = null; }
   if (_localStream) { _localStream.getTracks().forEach(t => t.stop()); _localStream = null; }
@@ -388,7 +388,7 @@ G.onIncomingCall = async (obj) => {
   const { from, sdp } = obj;
   const peer = G._PEERS[from];
   if (!confirm(`Incoming call from ${peer?.name || from.slice(0, 10)}. Answer?`)) {
-    if (peer?.kyberPk) nostrPub(from, peer.kyberPk, { type: 'reject' }, 25050).catch(() => { });
+    if (peer?.kyberPk) nostrPub(from, peer.kyberPk, { type: 'reject', from: G._NK.pub }, 25050).catch(() => { });
     return;
   }
   _callPeer = from; _callState = 'connecting';
@@ -412,7 +412,7 @@ G.onIncomingCall = async (obj) => {
   await pcm.pc.setLocalDescription(answer);
   await waitForGathering(pcm.pc, 6000);
   const aSdp = sanitizeSDP(pcm.pc.localDescription.sdp);
-  await nostrPub(from, peer.kyberPk, { type: 'answer', sdp: aSdp }, 25050);
+  await nostrPub(from, peer.kyberPk, { type: 'answer', from: G._NK.pub, sdp: aSdp }, 25050);
   document.getElementById('callSt').textContent = 'Connecting...';
 };
 

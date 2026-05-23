@@ -66,16 +66,16 @@ G.playVoice     = (id) => playVoice(id);
 G.startCall     = (pub) => { startCall(pub); };
 G.addPeer       = addPeer;
 G.delPeer       = delPeer;
-G.confirmVerify = () => {
-  const npub = document.getElementById('fpModal').dataset.npub;
+G.confirmVerify = async () => {
+  const npub = _fpCurrentPeer;
   if (!npub || !G._PEERS?.[npub]) return;
-  G._PEERS[npub].fpVerified = true;
+  const hash = await computeFP(npub);
+  if (!hash) return;
+  G._PEERS[npub].fpVerified = fpToHex(hash);
   localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
-  document.getElementById('fpStatus').textContent = '✓ Verified';
-  document.getElementById('fpStatus').style.color = 'var(--grn)';
-  const fpBtn = document.getElementById('fpBtn');
-  if (G.AP === npub) fpBtn.className = 'fp-btn verified';
-  renderPeers(); renderContacts();
+  G.updateFPBtn(npub);
+  G.closeFP();
+  renderContacts();
 };
 G.openFP        = openFP;
 G.closeFP       = closeFP;
@@ -127,8 +127,6 @@ G._renderMsgs   = renderMsgs;
 G._idbSave      = idbSave;
 G._WS           = WS;
 G._CONN         = CONN;
-G._saveOQ       = _saveOQ;
-G._OQ           = _OQ;
 
 // ── Color palette for peer avatars ──
 
@@ -349,6 +347,8 @@ G._saveOQ = () => {
     localStorage.setItem('rl6_oq', JSON.stringify(safe));
   } catch {}
 };
+const _saveOQ = G._saveOQ;
+const _OQ = G._OQ;
 
 function _loadOQ() {
   try { G._OQ = JSON.parse(localStorage.getItem('rl6_oq') || '[]'); } catch { G._OQ = []; }
@@ -365,8 +365,8 @@ async function _flushOQ() {
       catch { G._OQ.push(item); }
     }
   }
-  if (!G._OQ.length) document.getElementById('obar').classList.add('on');
-  else document.getElementById('obar').classList.remove('on');
+  if (!G._OQ.length) document.getElementById('obar').classList.remove('on');
+  else document.getElementById('obar').classList.add('on');
 }
 
 // ── Relay pills ── 
@@ -514,6 +514,8 @@ async function boot() {
   const dis = parseInt(localStorage.getItem('rl6_disappear') || '0');
   G._disappearMs = dis > 0 ? dis : 0;
   if (G._disappearMs > 0) setInterval(runDisappearing, 60000);
+
+  _loadOQ();
 
   // WebRTC state
   G._PCM = null; G._callPeer = null; G._callState = 'idle'; G._muted = false;

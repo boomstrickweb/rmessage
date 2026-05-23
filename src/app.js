@@ -74,6 +74,9 @@ async function boot() {
   try { G._PEERS = JSON.parse(localStorage.getItem('rl5_peers')) || {}; } catch { G._PEERS = {}; }
   try { G._OQ = JSON.parse(localStorage.getItem('rl6_oq')) || []; } catch { G._OQ = []; }
   try { const dk = JSON.parse(localStorage.getItem('rl6_mldsa_key')); if (dk?.pk && dk?.sk) G.MLDSAkeys = dk; } catch { }
+  
+  // Load Key Transparency log
+  try { if (G.ktLoad) G.ktLoad(); } catch { }
 
   G._C = CRDT.load(G._NK.pub);
   document.getElementById('myNostr').textContent = G._NK.pub;
@@ -84,6 +87,10 @@ async function boot() {
   renderContacts();
   document.getElementById('loading').style.display = 'none';
   RELAYS.forEach(url => relConn(url, onEv));
+
+  // Background start
+  try { if (G.startPadding) setTimeout(G.startPadding, 8000); } catch { }
+  try { if (G.startHeartbeat) setTimeout(G.startHeartbeat, 3000); } catch { }
 
   if (!G.MLDSAkeys) {
     setTimeout(async () => {
@@ -125,10 +132,15 @@ G.sendTxt = async () => {
   document.getElementById('sbtn').disabled = true;
   const op = G._C.add('text', { text: txt }, G.AP); renderMsgs();
   inp.value = ''; inp.style.height = 'auto';
-  try {
-    const s = await nostrPub(G.AP, peer.kyberPk, op);
-    if (!s) { G._OQ.push({ to: G.AP, op }); saveOQ(); document.getElementById('obar').classList.add('on'); }
-  } catch { G._OQ.push({ to: G.AP, op }); saveOQ(); document.getElementById('obar').classList.add('on'); }
+  if (CONN.size > 0) {
+    try {
+      const s = await nostrPub(G.AP, peer.kyberPk, op);
+      if (!s) { G._OQ.push({ to: G.AP, op }); saveOQ(); document.getElementById('obar').classList.add('on'); }
+    } catch { G._OQ.push({ to: G.AP, op }); saveOQ(); document.getElementById('obar').classList.add('on'); }
+  } else {
+    G._OQ.push({ to: G.AP, op }); saveOQ(); document.getElementById('obar').classList.add('on');
+  }
+  iStat();
   document.getElementById('sbtn').disabled = false; inp.focus();
 };
 
@@ -206,8 +218,8 @@ G.openFP = async (peerPub) => {
 G.closeFP = () => { document.getElementById('fpModal').classList.remove('show'); _fpCurrentPeer = null; };
 G.confirmVerify = async () => {
   if (!_fpCurrentPeer) return;
-  const peer = G._PEERS[_fpCurrentPeer];
-  const hash = await computeFP(_fpCurrentPeer);
+  const peer = G._PEERS[_fpCurrentPeer]; if (!peer) return;
+  const hash = await computeFP(_fpCurrentPeer); if (!hash) return;
   peer.fpVerified = fpToHex(hash);
   localStorage.setItem('rl5_peers', JSON.stringify(G._PEERS));
   updateFPBtn(_fpCurrentPeer);
@@ -216,7 +228,8 @@ G.confirmVerify = async () => {
 
 function updateFPBtn(peerPub) {
   const btn = document.getElementById('fpBtn'); if (!btn) return;
-  const peer = G._PEERS[peerPub];
+  const peer = G._PEERS[peerPub]; if (!peer) return;
+  if (!peer.kyberPk) { btn.className = 'fp-btn'; return; }
   if (peer.fpVerified) { btn.className = 'fp-btn verified'; btn.textContent = '✓'; }
   else { btn.className = 'fp-btn unverified'; btn.textContent = '⚠'; }
 }
@@ -252,9 +265,9 @@ function na(id) { document.querySelectorAll('.nb').forEach(b => b.classList.remo
 
 // ── PIN Global Exposure ──
 // Mapping imported PIN functions directly to window object
-window.pinKey = pinKey;
-window.pinDel = pinDel;
-window.tryBiometric = tryBiometric;
+window.pKey = pinKey;
+window.pDel = pinDel;
+window.tBio = tryBiometric;
 
 // Global functions for inline HTML event handlers
 window.onFile = (e) => G.onFile(e);
@@ -271,6 +284,9 @@ window.copyBundle = () => G.copyBundle();
 window.addPeer = () => G.addPeer();
 window.delPeer = (k) => G.delPeer(k);
 window.rsz = (e) => G.rsz(e);
+window.pinKey = (n) => window.pKey(n);
+window.pinDel = () => window.pDel();
+window.tryBiometric = () => window.tBio();
 window.openTTL = () => G.openTTL();
 window.closeTTL = () => G.closeTTL();
 window.setTTL = (s) => G.setTTL(s);

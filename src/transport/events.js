@@ -4,10 +4,13 @@ import { renderMsgs, renderContacts, showBadge } from '../ui/render.js';
 import { markOnline, handleOnionRelay } from './onion.js';
 import { unpadPlain } from './padding.js';
 import { PCM } from './webrtc.js';
+import { isReplay } from './nostr.js';
 
 const G = window;
 
 export async function onEv(ev) {
+  if (!G._KKkeys) return;
+  if (isReplay(ev)) return;
   try {
     const parsed = JSON.parse(ev.content);
     

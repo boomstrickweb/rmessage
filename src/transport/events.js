@@ -136,7 +136,7 @@ export async function onEv(ev) {
               if (!msgStr) msgStr = td(outerBytes);
 
               let obj;
-              try { obj = JSON.parse(msgStr); } catch { continue; }
+              try { obj = JSON.parse(msgStr); } catch { return; }
               
               if (obj.type === 'offer' || obj.type === 'answer' || obj.type === 'ice' || obj.type === 'dc_offer' || obj.type === 'dc_answer' || obj.type === 'reject' || obj.type === 'end' || obj.type === 'ice_restart' || obj.type === 'ice_restart_answer') {
                 obj.from = fp;

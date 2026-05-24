@@ -265,24 +265,21 @@ async function _dcSendFile(item) {
 
 export async function ensureDC(peerPub) {
   if (PCM?.dcOpen() && PCM.peer === peerPub) return true;
-  if (PCM?.peer === peerPub && (PCM.pc?.iceConnectionState === 'checking' || PCM.pc?.iceConnectionState === 'connected' || PCM.pc?.iceConnectionState === 'new' || PCM.pc?.iceConnectionState === 'connecting')) {
-    for (let i = 0; i < 30; i++) {
-      await new Promise(r => setTimeout(r, 500));
-      if (PCM?.dcOpen() && PCM.peer === peerPub) return true;
-      if (!PCM || PCM.peer !== peerPub) break;
-    }
-  }
+  
   if (PCM && PCM.peer === peerPub) {
-     // If we are already trying to connect to this peer, don't restart unless it's really dead
-     const s = PCM.pc?.connectionState;
-     if (s === 'connecting' || s === 'new' || s === 'connected') {
-        // We are already in progress, just fall through to the wait promise
-     } else {
-        try { PCM.close(); } catch { } PCM = null;
-     }
+    // If we are already trying to connect to this peer, wait for it
+    return new Promise(res => {
+      let t = setTimeout(() => { clearInterval(i); res(false); }, 30000);
+      let i = setInterval(() => { 
+        if (PCM?.dcOpen() && PCM.peer === peerPub) { clearTimeout(t); clearInterval(i); res(true); } 
+        else if (!PCM || PCM.peer !== peerPub || (PCM.pc && (PCM.pc.connectionState === 'failed' || PCM.pc.connectionState === 'closed'))) { 
+          clearTimeout(t); clearInterval(i); res(false); 
+        }
+      }, 200);
+    });
   }
 
-  if (PCM && PCM.peer !== peerPub) {
+  if (PCM) {
      try { PCM.close(); } catch { } PCM = null;
   }
   

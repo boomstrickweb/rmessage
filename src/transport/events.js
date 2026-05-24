@@ -98,7 +98,7 @@ export function isReplay(ev) {
 export async function onEv(ev) {
   if (!G._KKkeys) return;
   if (isReplay(ev)) return;
-  let str, realSenderPub = ev.pubkey;
+  let str, realFrom = ev.pubkey;
   try {
     const parsed = JSON.parse(ev.content);
     const fp = ev.pubkey;

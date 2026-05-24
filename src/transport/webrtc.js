@@ -55,7 +55,6 @@ export class PCManager {
       bundlePolicy: 'max-bundle', 
       rtcpMuxPolicy: 'require',
       sdpSemantics: 'unified-plan',
-      iceCandidatePoolSize: 2
     };
     this.pc = new RTCPeerConnection(cfg);
 
@@ -221,6 +220,7 @@ async function _dcSendFile(item) {
 
   const total = Math.ceil(data.length / CHUNK);
   console.log(`Sending file: ${file.name}, total chunks: ${total}, tid: ${tid}`);
+  if (item.localOp) { item.localOp.payload._prog = 0.01; renderMsgs(); }
   try {
     PCM.dc.send(JSON.stringify({ type: 'tstart', tid, total, name: file.name, size: file.size, mime: file.type, dur: file._duration || 0 }));
   } catch (e) { console.warn('Send tstart failed', e); return; }

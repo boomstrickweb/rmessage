@@ -656,6 +656,10 @@ const playVoice = (opId) => {
   playBytes(bytes, op.payload?.mimeType);
 };
 
+const startCallFromChat = () => {
+  if (G.AP) startCall(G.AP);
+};
+
 // ── Global Exposure ──
 
 window.onFile = (e) => onFile(e);

@@ -225,7 +225,7 @@ export async function onEv(ev) {
   }
 }
 
-export { isReplay, nostrPub };
+export { nostrPub };
 
 async function handleSignaling(obj) {
   const { type, from } = obj;

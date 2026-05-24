@@ -2,6 +2,8 @@ import { hex, rnd, fhex, te } from '../utils.js';
 import { kemE, aesEnc } from '../crypto/mlkem.js';
 import { buildEv } from '../crypto/secp256k1.js';
 
+const G_ST = window;
+
 export const RELAYS = ['wss://relay.damus.io', 'wss://nos.lol', 'wss://relay.nostr.info'];
 export const WS = {};
 export const CONN = new Set();
@@ -43,7 +45,6 @@ export function relConn(url, onEvCallback) {
     WS[url] = ws;
     CONN.add(url);
     setRp(url, 'ok');
-    const G_ST = window;
     ws.send(JSON.stringify(['REQ', hex(rnd(8)), { kinds: [4, 25050], '#p': [G_ST._NK.pub], limit: 50 }]));
     iStat();
     if (window.flushOQ) window.flushOQ();
@@ -68,7 +69,6 @@ export function relConn(url, onEvCallback) {
 }
 
 export function resubAll() {
-  const G_ST = window;
   Object.keys(WS).forEach(url => {
     const ws = WS[url];
     if (ws && ws.readyState === 1) {
@@ -78,7 +78,6 @@ export function resubAll() {
 }
 
 export async function nostrPub(toPub, kyberPk, obj, kind = 4) {
-  const G_ST = window;
   const payload = kind === 25050 ? { ...obj, kyberPk: G_ST._KKkeys.pk } : obj;
   if (!payload._sender) {
     payload._sender = { nostr: G_ST._NK.pub, kyber: G_ST._KKkeys.pk };

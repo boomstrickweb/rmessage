@@ -2,6 +2,7 @@ import { td, fhex, te } from '../utils.js';
 import { kemD, aesDec } from '../crypto/mlkem.js';
 import { renderMsgs, renderContacts, showBadge } from '../ui/render.js';
 import { markOnline, handleOnionRelay } from './onion.js';
+import { nostrPub } from './nostr.js';
 import { unpadPlain } from './padding.js';
 import { PCM, onDCMsg, sanitizeSDP, PCManager, setPCM, waitForGathering } from './webrtc.js';
 import { drLoad, drSave, drInit, drInitRecv, hkdf2, hkdf1, drEncrypt, drDecrypt, stampDeniable, verifyDeniable } from '../crypto/ratchet.js';
@@ -224,8 +225,6 @@ export async function onEv(ev) {
     else { renderContacts(); showBadge(); }
   }
 }
-
-export { nostrPub };
 
 async function handleSignaling(obj) {
   const { type, from } = obj;

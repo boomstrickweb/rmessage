@@ -1,16 +1,17 @@
-import { td, fhex, te } from '../utils.js';
+import { td, fhex, te, hex } from '../utils.js';
 import { kemD, aesDec } from '../crypto/mlkem.js';
 import { renderMsgs, renderContacts, showBadge } from '../ui/render.js';
 import { markOnline, handleOnionRelay } from './onion.js';
 import { nostrPub } from './nostr.js';
 import { unpadPlain } from './padding.js';
 import { PCM, onDCMsg, sanitizeSDP, PCManager, setPCM, waitForGathering } from './webrtc.js';
-import { drLoad, drSave, drInit, drInitRecv, hkdf2, hkdf1, drEncrypt, drDecrypt, stampDeniable, verifyDeniable } from '../crypto/ratchet.js';
-
+import { stampDeniable, verifyDeniable } from '../crypto/ratchet.js';
 import { SHA3_256 } from '../crypto/sha3.js';
 import { mldsaSign } from '../crypto/mldsa.js';
 
 const G = window;
+
+function isExpired(op) { return op._exp && Date.now() > op._exp; }
 
 // Key Transparency Log
 export let _ktLog = [];
@@ -135,12 +136,7 @@ export async function onEv(ev) {
               if (!msgStr) msgStr = td(outerBytes);
 
               let obj;
-              try {
-                const drPlain = await drDecrypt(fp, msgStr);
-                obj = JSON.parse(td(drPlain));
-              } catch {
-                obj = JSON.parse(msgStr);
-              }
+              try { obj = JSON.parse(msgStr); } catch { continue; }
               
               if (obj.type === 'offer' || obj.type === 'answer' || obj.type === 'ice' || obj.type === 'dc_offer' || obj.type === 'dc_answer' || obj.type === 'reject' || obj.type === 'end' || obj.type === 'ice_restart' || obj.type === 'ice_restart_answer') {
                 obj.from = fp;
@@ -194,12 +190,7 @@ export async function onEv(ev) {
   } catch { return; }
 
   let obj;
-  try {
-    const drPlain = await drDecrypt(realFrom, str);
-    obj = JSON.parse(td(drPlain));
-  } catch {
-    try { obj = JSON.parse(str); } catch { return; }
-  }
+  try { obj = JSON.parse(str); } catch { return; }
   
   if (obj._sender?.nostr && obj._sender?.kyber) {
     const sn = obj._sender.nostr; const sk = obj._sender.kyber;
@@ -211,8 +202,11 @@ export async function onEv(ev) {
     markOnline(sn);
   }
 
-  obj.from = realFrom;
-  await verifyDeniable(obj, realFrom);
+  const realSender = obj._sender?.nostr || realFrom;
+  if (realSender === G._NK.pub) return; // own message echoed back
+  obj.from = realSender;
+  if (ev.kind === 4 && realSender && realSender !== G._NK.pub) markOnline(realSender);
+  await verifyDeniable(obj, realSender);
 
   if (obj.type === 'offer' || obj.type === 'answer' || obj.type === 'ice' || obj.type === 'dc_offer' || obj.type === 'dc_answer' || obj.type === 'reject' || obj.type === 'end' || obj.type === 'ice_restart' || obj.type === 'ice_restart_answer') {
     await handleSignaling(obj);
@@ -220,8 +214,10 @@ export async function onEv(ev) {
   }
 
   if (!obj.id || !obj.type || obj.type === '__pad__') return;
+  if (isExpired(obj)) return;
+  obj._nostrId = ev.id;
   if (G._C.merge(obj)) {
-    if (G.AP === realFrom) renderMsgs();
+    if (G.AP === realSender) renderMsgs();
     else { renderContacts(); showBadge(); }
   }
 }
@@ -256,8 +252,6 @@ async function handleSignaling(obj) {
     await PCM.addICE(new RTCIceCandidate(obj.candidate)).catch(() => { });
   } else if (type === 'dc_offer') {
     if (!peer?.kyberPk) return;
-    // Only replace PCM if it's not an active call
-    if (PCM && PCM.isCall) return; // don't interrupt active call
     if (PCM) { try { PCM.close(); } catch { } }
     const pcm = new PCManager(false);
     setPCM(pcm);
@@ -265,7 +259,7 @@ async function handleSignaling(obj) {
     await pcm.setRemote(new RTCSessionDescription({ type: 'offer', sdp: obj.sdp }));
     const answer = await pcm.pc.createAnswer();
     await pcm.pc.setLocalDescription(answer);
-    await waitForGathering(pcm.pc, 12000);
+    await waitForGathering(pcm.pc, 8000);
     const sdp = sanitizeSDP(pcm.pc.localDescription.sdp);
     await nostrPub(from, peer.kyberPk, { type: 'dc_answer', from: G._NK.pub, sdp }, 25050);
   } else if (type === 'dc_answer' && PCM) {

@@ -206,10 +206,8 @@ const sendHybrid = async (destPub, destKyberPk, obj) => {
   const innerObj = { ...obj, _sender: { nostr: G._NK.pub, kyber: G._KKkeys.pk } };
   
   await yieldUI();
-  const drPayload = await drEncrypt(destPub, JSON.stringify(innerObj));
-  
   const { ct, K } = kemE(destKyberPk);
-  const padded = padPlain(drPayload);
+  const padded = padPlain(te(JSON.stringify(innerObj)));
   const { iv, ct: a } = await aesEnc(K, padded);
   const enc = JSON.stringify({ v: 4, kem: ct, iv, ct: a });
 
@@ -345,23 +343,23 @@ const startCall = async (peerPub) => {
   if (!peer?.kyberPk) { alert('Peer key missing.'); return; }
   _callPeer = peerPub; _callState = 'calling';
   showCallScreen(peerPub, 'Calling...', 'ring');
+
+  try {
+    _localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
+  } catch (err) { setCallSt('Mic access denied', 'err'); setTimeout(() => endCall(), 2000); return; }
+
   const pcm = new PCManager(true);
   setPCM(pcm);
   await pcm.init(peerPub, true);
-  
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    _localStream = stream;
-    stream.getTracks().forEach(t => pcm.pc.addTrack(t, stream));
-  } catch (err) { console.error('Mic access failed', err); }
-  
-  const offer = await pcm.pc.createOffer();
+  _localStream.getTracks().forEach(t => pcm.pc.addTrack(t, _localStream));
+
+  const offer = await pcm.pc.createOffer({ offerToReceiveAudio: true });
   await pcm.pc.setLocalDescription(offer);
   await waitForGathering(pcm.pc, 6000);
-  const sdp = sanitizeSDP(pcm.pc.localDescription.sdp);
+  const sdp = sanitizeSDP(pcm.pc.localDescription?.sdp || offer.sdp);
   await nostrPub(peerPub, peer.kyberPk, { type: 'offer', from: G._NK.pub, sdp, kyberPk: G._KKkeys.pk }, 25050);
   setCallSt('Waiting for answer...', 'ring');
-  
+
   setTimeout(() => {
     if (_callState === 'calling') {
       setCallSt('No answer', 'err');
@@ -377,21 +375,21 @@ const answerCall = async () => {
   _callPeer = from; _callState = 'connecting';
   showCallScreen(from, 'Answering...', 'ring');
   const peer = G._PEERS[from];
+
+  try {
+    _localStream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false });
+  } catch (err) { setCallSt('Mic access denied', 'err'); setTimeout(() => endCall(), 2000); return; }
+
   const pcm = new PCManager(true);
   setPCM(pcm);
   await pcm.init(from, true);
+  _localStream.getTracks().forEach(t => pcm.pc.addTrack(t, _localStream));
   await pcm.setRemote(new RTCSessionDescription({ type: 'offer', sdp }));
-  
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    _localStream = stream;
-    stream.getTracks().forEach(t => pcm.pc.addTrack(t, stream));
-  } catch (err) { console.error('Mic access failed', err); }
-  
+
   const answer = await pcm.pc.createAnswer();
   await pcm.pc.setLocalDescription(answer);
   await waitForGathering(pcm.pc, 6000);
-  const aSdp = sanitizeSDP(pcm.pc.localDescription.sdp);
+  const aSdp = sanitizeSDP(pcm.pc.localDescription?.sdp || answer.sdp);
   await nostrPub(from, peer.kyberPk, { type: 'answer', from: G._NK.pub, sdp: aSdp }, 25050);
   setCallSt('Connecting...', 'ring');
 };

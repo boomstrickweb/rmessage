@@ -256,6 +256,8 @@ async function handleSignaling(obj) {
     await PCM.addICE(new RTCIceCandidate(obj.candidate)).catch(() => { });
   } else if (type === 'dc_offer') {
     if (!peer?.kyberPk) return;
+    // Only replace PCM if it's not an active call
+    if (PCM && PCM.isCall) return; // don't interrupt active call
     if (PCM) { try { PCM.close(); } catch { } }
     const pcm = new PCManager(false);
     setPCM(pcm);
@@ -263,7 +265,7 @@ async function handleSignaling(obj) {
     await pcm.setRemote(new RTCSessionDescription({ type: 'offer', sdp: obj.sdp }));
     const answer = await pcm.pc.createAnswer();
     await pcm.pc.setLocalDescription(answer);
-    await waitForGathering(pcm.pc, 8000);
+    await waitForGathering(pcm.pc, 12000);
     const sdp = sanitizeSDP(pcm.pc.localDescription.sdp);
     await nostrPub(from, peer.kyberPk, { type: 'dc_answer', from: G._NK.pub, sdp }, 25050);
   } else if (type === 'dc_answer' && PCM) {

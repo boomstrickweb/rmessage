@@ -124,17 +124,25 @@ function updateP2PStatus(s) {
 
 export function sanitizeSDP(s) { return s.replace(/^c=IN IP[46] \S+$/mg, 'c=IN IP4 0.0.0.0').replace(/^(o=\S+ \S+ \S+ IN IP[46] )\S+$/mg, '$10.0.0.0'); }
 
-export function waitForGathering(pc, timeout = 8000) {
+export function waitForGathering(pc, timeout = 12000) {
   return new Promise(resolve => {
     if (pc.iceGatheringState === 'complete') { resolve(); return; }
+    let relayCount = 0;
+    let doneTimer = null;
     const done = () => {
+      if (doneTimer) { clearTimeout(doneTimer); doneTimer = null; }
       pc.removeEventListener('icegatheringstatechange', onState);
       pc.removeEventListener('icecandidate', onCand);
       resolve();
     };
     const onState = () => { if (pc.iceGatheringState === 'complete') done(); };
-    let hasRelay = false;
-    const onCand = e => { if (e.candidate?.type === 'relay' && !hasRelay) { hasRelay = true; setTimeout(done, 500); } };
+    const onCand = e => {
+      if (!e.candidate) { done(); return; }
+      if (e.candidate.type === 'relay') {
+        relayCount++;
+        if (relayCount === 1) { if (doneTimer) clearTimeout(doneTimer); doneTimer = setTimeout(done, 1000); }
+      }
+    };
     pc.addEventListener('icegatheringstatechange', onState);
     pc.addEventListener('icecandidate', onCand);
     setTimeout(done, timeout);
@@ -192,20 +200,25 @@ export async function onDCMsg(msg, peerPub) {
 async function processDCQ() {
   if (processDCQ._running) return;
   processDCQ._running = true;
+  let retries = 0;
   while (dcQ.length) {
     const item = dcQ[0];
     const ok = await ensureDC(item.peerPub);
     if (ok && PCM?.dcOpen() && PCM.peer === item.peerPub) {
+      retries = 0;
       dcQ.shift();
       await _dcSendFile(item);
     } else {
-      if (ok && PCM?.peer !== item.peerPub) {
-        console.warn('PCM switched during ensureDC for', item.peerPub);
+      retries++;
+      console.warn('DC not ready for', item.peerPub, '(attempt', retries + ')');
+      if (retries >= 3) {
+        console.warn('Giving up on DC for', item.peerPub, 'after 3 attempts');
+        dcQ.shift();
+        retries = 0;
       } else {
-        console.warn('DC not ready for', item.peerPub);
+        await new Promise(r => setTimeout(r, 3000));
+        if (!dcQ.length) break;
       }
-      await new Promise(r => setTimeout(r, 5000));
-      if (!dcQ.length) break;
     }
   }
   processDCQ._running = false;
@@ -265,40 +278,46 @@ async function _dcSendFile(item) {
 
 export async function ensureDC(peerPub) {
   if (PCM?.dcOpen() && PCM.peer === peerPub) return true;
-  
+
+  // If PCM exists for this peer but is dead, close it so we can retry
   if (PCM && PCM.peer === peerPub) {
-    // If we are already trying to connect to this peer, wait for it
+    const cs = PCM.pc?.connectionState;
+    if (cs === 'failed' || cs === 'closed') {
+      try { PCM.close(); } catch { } PCM = null;
+    }
+  }
+
+  // If PCM exists for this peer and is still in-progress, wait for it
+  if (PCM && PCM.peer === peerPub) {
     return new Promise(res => {
-      let t = setTimeout(() => { clearInterval(i); res(false); }, 30000);
-      let i = setInterval(() => { 
-        if (PCM?.dcOpen() && PCM.peer === peerPub) { clearTimeout(t); clearInterval(i); res(true); } 
-        else if (!PCM || PCM.peer !== peerPub || (PCM.pc && (PCM.pc.connectionState === 'failed' || PCM.pc.connectionState === 'closed'))) { 
-          clearTimeout(t); clearInterval(i); res(false); 
+      let t = setTimeout(() => { clearInterval(iv); res(false); }, 30000);
+      let iv = setInterval(() => {
+        if (PCM?.dcOpen() && PCM.peer === peerPub) { clearTimeout(t); clearInterval(iv); res(true); }
+        else if (!PCM || PCM.peer !== peerPub || (PCM.pc && (PCM.pc.connectionState === 'failed' || PCM.pc.connectionState === 'closed'))) {
+          clearTimeout(t); clearInterval(iv); res(false);
         }
       }, 200);
     });
   }
 
-  if (PCM) {
-     try { PCM.close(); } catch { } PCM = null;
-  }
-  
-  if (!PCM) {
-    PCM = new PCManager(false);
-    await PCM.init(peerPub, false);
-    const offer = await PCM.pc.createOffer();
-    await PCM.pc.setLocalDescription(offer);
-    await waitForGathering(PCM.pc, 8000);
-    const sdp = sanitizeSDP(PCM.pc.localDescription.sdp);
-    const p = G._PEERS[peerPub]; if (!p?.kyberPk) return false;
-    await nostrPub(peerPub, p.kyberPk, { type: 'dc_offer', from: G._NK.pub, sdp }, 25050);
-  }
-  
+  // Close any PCM for a different peer
+  if (PCM) { try { PCM.close(); } catch { } PCM = null; }
+
+  // Create new connection
+  PCM = new PCManager(false);
+  await PCM.init(peerPub, false);
+  const offer = await PCM.pc.createOffer();
+  await PCM.pc.setLocalDescription(offer);
+  await waitForGathering(PCM.pc, 12000);
+  const sdp = sanitizeSDP(PCM.pc.localDescription.sdp);
+  const p = G._PEERS[peerPub]; if (!p?.kyberPk) return false;
+  await nostrPub(peerPub, p.kyberPk, { type: 'dc_offer', from: G._NK.pub, sdp }, 25050);
+
   return new Promise(res => {
-    let t = setTimeout(() => { clearInterval(i); res(false); }, 30000);
-    let i = setInterval(() => { 
-      if (PCM?.dcOpen() && PCM.peer === peerPub) { clearTimeout(t); clearInterval(i); res(true); } 
-      else if (!PCM || PCM.peer !== peerPub) { clearTimeout(t); clearInterval(i); res(false); }
+    let t = setTimeout(() => { clearInterval(iv); res(false); }, 35000);
+    let iv = setInterval(() => {
+      if (PCM?.dcOpen() && PCM.peer === peerPub) { clearTimeout(t); clearInterval(iv); res(true); }
+      else if (!PCM || PCM.peer !== peerPub) { clearTimeout(t); clearInterval(iv); res(false); }
     }, 200);
   });
 }

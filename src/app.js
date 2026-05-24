@@ -432,7 +432,21 @@ G.onIncomingCall = (obj) => {
   showIncoming(from);
 };
 
-G.onCallAnswer = () => { _callState = 'connecting'; setCallSt('ICE gathering...', 'ring'); };
+G.onCallAnswer = () => { _callState = 'connecting'; setCallSt('Connecting...', 'ring'); };
+G.onConnectionStateChange = (state, isCall, peerPub) => {
+  if (!isCall) return;
+  if (state === 'connected') {
+    setCallSt('Connected (Secure)', 'conn');
+    _callState = 'connected';
+    const muteBtn = document.getElementById('muteBtn');
+    if (muteBtn) muteBtn.disabled = false;
+  } else if (state === 'failed' || state === 'disconnected') {
+    if (_callState === 'connected' || _callState === 'connecting') {
+      setCallSt('Connection lost', 'err');
+      setTimeout(() => endCall(), 3000);
+    }
+  }
+};
 G.onCallReject = () => { setCallSt('Rejected', 'err'); setTimeout(() => endCall(), 1500); };
 G.onCallEnd = () => { endCall(); };
 G.onRemoteStream = (stream) => {

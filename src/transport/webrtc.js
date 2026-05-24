@@ -196,11 +196,15 @@ async function processDCQ() {
   while (dcQ.length) {
     const item = dcQ[0];
     const ok = await ensureDC(item.peerPub);
-    if (ok && PCM?.dcOpen()) {
+    if (ok && PCM?.dcOpen() && PCM.peer === item.peerPub) {
       dcQ.shift();
       await _dcSendFile(item);
     } else {
-      console.warn('DC not ready for', item.peerPub);
+      if (ok && PCM?.peer !== item.peerPub) {
+        console.warn('PCM switched during ensureDC for', item.peerPub);
+      } else {
+        console.warn('DC not ready for', item.peerPub);
+      }
       await new Promise(r => setTimeout(r, 5000));
       if (!dcQ.length) break;
     }
@@ -261,25 +265,44 @@ async function _dcSendFile(item) {
 
 export async function ensureDC(peerPub) {
   if (PCM?.dcOpen() && PCM.peer === peerPub) return true;
-  if (PCM?.peer === peerPub && (PCM.pc?.iceConnectionState === 'checking' || PCM.pc?.iceConnectionState === 'connected' || PCM.pc?.iceConnectionState === 'new')) {
+  if (PCM?.peer === peerPub && (PCM.pc?.iceConnectionState === 'checking' || PCM.pc?.iceConnectionState === 'connected' || PCM.pc?.iceConnectionState === 'new' || PCM.pc?.iceConnectionState === 'connecting')) {
     for (let i = 0; i < 30; i++) {
       await new Promise(r => setTimeout(r, 500));
-      if (PCM?.dcOpen()) return true;
+      if (PCM?.dcOpen() && PCM.peer === peerPub) return true;
       if (!PCM || PCM.peer !== peerPub) break;
     }
   }
-  if (PCM) { try { PCM.close(); } catch { } PCM = null; }
-  PCM = new PCManager(false);
-  await PCM.init(peerPub, false);
-  const offer = await PCM.pc.createOffer();
-  await PCM.pc.setLocalDescription(offer);
-  await waitForGathering(PCM.pc, 8000);
-  const sdp = sanitizeSDP(PCM.pc.localDescription.sdp);
-  const p = G._PEERS[peerPub]; if (!p?.kyberPk) return false;
-  await nostrPub(peerPub, p.kyberPk, { type: 'dc_offer', from: G._NK.pub, sdp }, 25050);
+  if (PCM && PCM.peer === peerPub) {
+     // If we are already trying to connect to this peer, don't restart unless it's really dead
+     const s = PCM.pc?.connectionState;
+     if (s === 'connecting' || s === 'new' || s === 'connected') {
+        // We are already in progress, just fall through to the wait promise
+     } else {
+        try { PCM.close(); } catch { } PCM = null;
+     }
+  }
+
+  if (PCM && PCM.peer !== peerPub) {
+     try { PCM.close(); } catch { } PCM = null;
+  }
+  
+  if (!PCM) {
+    PCM = new PCManager(false);
+    await PCM.init(peerPub, false);
+    const offer = await PCM.pc.createOffer();
+    await PCM.pc.setLocalDescription(offer);
+    await waitForGathering(PCM.pc, 8000);
+    const sdp = sanitizeSDP(PCM.pc.localDescription.sdp);
+    const p = G._PEERS[peerPub]; if (!p?.kyberPk) return false;
+    await nostrPub(peerPub, p.kyberPk, { type: 'dc_offer', from: G._NK.pub, sdp }, 25050);
+  }
+  
   return new Promise(res => {
     let t = setTimeout(() => { clearInterval(i); res(false); }, 30000);
-    let i = setInterval(() => { if (PCM?.dcOpen()) { clearTimeout(t); clearInterval(i); res(true); } }, 200);
+    let i = setInterval(() => { 
+      if (PCM?.dcOpen() && PCM.peer === peerPub) { clearTimeout(t); clearInterval(i); res(true); } 
+      else if (!PCM || PCM.peer !== peerPub) { clearTimeout(t); clearInterval(i); res(false); }
+    }, 200);
   });
 }
 

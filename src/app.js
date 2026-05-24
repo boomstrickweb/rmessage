@@ -574,6 +574,88 @@ const clearData = () => {
   localStorage.clear(); sessionStorage.clear(); location.reload();
 };
 
+const getBestMime = () => {
+  if (typeof MediaRecorder === 'undefined') return 'audio/mp4';
+  const order = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+  return order.find(t => MediaRecorder.isTypeSupported(t)) || 'audio/mp4';
+};
+const AUDIO_MIME = getBestMime();
+
+function playBytes(bytes, mimeType) {
+  const order = [mimeType, 'audio/mp4', 'audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus'].filter(Boolean);
+  let i = 0;
+  const tryNext = () => {
+    if (i >= order.length) return;
+    const m = order[i++];
+    const blob = new Blob([bytes], { type: m });
+    const url = URL.createObjectURL(blob);
+    const aud = new Audio();
+    aud.src = url;
+    aud.onended = () => setTimeout(() => URL.revokeObjectURL(url), 500);
+    aud.onerror = () => { URL.revokeObjectURL(url); tryNext(); };
+    aud.play().catch(() => tryNext());
+  };
+  tryNext();
+}
+
+let _mediaRec = null, _vChunks = [], _recStart = 0, _recCancelled = false;
+
+const startRec = (e) => {
+  if (e) e.preventDefault();
+  if (_mediaRec || !G.AP) return;
+  _recCancelled = false; _recStart = Date.now();
+  document.getElementById('voiceBtn').classList.add('rec');
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    _vChunks = [];
+    let opts = {};
+    if (MediaRecorder.isTypeSupported(AUDIO_MIME)) opts.mimeType = AUDIO_MIME;
+    _mediaRec = new MediaRecorder(stream, opts);
+    _mediaRec.ondataavailable = e => { if (e.data?.size > 0) _vChunks.push(e.data); };
+    _mediaRec.start(200);
+  }).catch(err => {
+    document.getElementById('voiceBtn').classList.remove('rec');
+    alert('Microphone access needed: ' + err.message);
+  });
+};
+
+const stopRec = async (e) => {
+  if (e) e.preventDefault();
+  document.getElementById('voiceBtn').classList.remove('rec');
+  if (!_mediaRec || _mediaRec.state === 'inactive') { _mediaRec = null; return; }
+  const dur = Math.round((Date.now() - _recStart) / 1000);
+  if (dur < 1 || _recCancelled) { _mediaRec.stop(); _mediaRec.stream.getTracks().forEach(t => t.stop()); _mediaRec = null; return; }
+  return new Promise(resolve => {
+    _mediaRec.onstop = async () => {
+      const mime = _vChunks[0]?.type || AUDIO_MIME || 'audio/mp4';
+      const blob = new Blob(_vChunks, { type: mime });
+      _mediaRec.stream.getTracks().forEach(t => t.stop()); _mediaRec = null;
+      if (!G.AP || !G._PEERS[G.AP]?.kyberPk) { resolve(); return; }
+      const ext = mime.includes('mp4') ? 'mp4' : mime.includes('webm') ? 'webm' : 'm4a';
+      const vFile = new File([blob], 'voice.' + ext, { type: mime });
+      vFile._duration = dur;
+      await sendMedia(G.AP, vFile);
+      resolve();
+    };
+    _mediaRec.stop();
+  });
+};
+
+const cancelRec = () => {
+  _recCancelled = true; document.getElementById('voiceBtn').classList.remove('rec');
+  if (_mediaRec && _mediaRec.state !== 'inactive') {
+    _mediaRec.stop();
+    if (_mediaRec) _mediaRec.stream?.getTracks().forEach(t => t.stop());
+    _mediaRec = null;
+  }
+};
+
+const playVoice = (opId) => {
+  const op = G._C.ops.find(o => o.id === opId); if (!op) return;
+  const bytes = op.payload?._bytes;
+  if (!bytes) { alert('Audio still loading...'); return; }
+  playBytes(bytes, op.payload?.mimeType);
+};
+
 // ── Global Exposure ──
 
 window.onFile = (e) => onFile(e);

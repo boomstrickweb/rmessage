@@ -1,4 +1,4 @@
-import { te, hex, fhex } from '../utils.js';
+import { te, hex, fhex, rnd } from '../utils.js';
 import { kemKG, kemE, kemD } from './mlkem.js';
 
 // HKDF-SHA256: derive keys from input key material

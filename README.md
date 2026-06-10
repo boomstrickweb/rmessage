@@ -19,7 +19,7 @@ A browser-based, end-to-end encrypted peer-to-peer messenger implementing FIPS 2
 
 ```
 Text messages  → Nostr relay  (Sealed Sender · Double Ratchet · ML-KEM)
-Media / Files  → CF TURN DataChannel  (chunked · ML-KEM per chunk)
+Media / Files  → IPFS + Crust · PQC Hybrid  (chunked · ML-KEM per chunk)
 Voice calls    → CF TURN relay-only  (DTLS-SRTP · ML-KEM epoch rotation)
 ```
 

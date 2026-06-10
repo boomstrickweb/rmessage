@@ -150,6 +150,22 @@ export async function aesDec(k, ivH, ctH) {
   return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fhex(ivH) }, key, fhex(ctH)));
 }
 
+// Standalone AES-GCM for files (hybrid)
+export async function aesEncGCM(k, data) {
+  const key = await crypto.subtle.importKey('raw', k, { name: 'AES-GCM' }, false, ['encrypt']);
+  const iv = rnd(12);
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, data);
+  return { iv: hex(iv), ct: hex(new Uint8Array(ct)) };
+}
+
+export async function aesDecGCM(k, ivH, ctH) {
+  const key = await crypto.subtle.importKey('raw', k, { name: 'AES-GCM' }, false, ['decrypt']);
+  const ct = fhex(ctH);
+  const iv = fhex(ivH);
+  const dec = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, ct);
+  return new Uint8Array(dec);
+}
+
 // MessageChannel yield — 5x faster than setTimeout(0), frees UI
 export function yieldUI() { return new Promise(r => { const ch = new MessageChannel(); ch.port1.onmessage = r; ch.port2.postMessage(0); }); }
 

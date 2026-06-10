@@ -60,7 +60,7 @@ export function renderMsgs() {
     const col = me ? 'var(--acc)' : (p?.color || 'var(--pq)'); const nm = me ? 'Me' : (p?.name || m.from.slice(0, 10));
     const t = new Date(m.ts).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     const inQ = (G._OQ || []).some(q => q.op?.id === m.id);
-    const foot = `<div class="mf"><span>${t}</span>${me ? `<span class="${inQ ? 'pc' : 'okc'}">${inQ ? '⏳' : '✓✓'}</span><span style="font-size:8px;color:var(--dim)">${m.type === 'text' ? 'relay' : 'TURN'}</span>` : '<span style="color:var(--pq);font-size:8px">PQ·E2E</span>'}</div>`;
+    const foot = `<div class="mf"><span>${t}</span>${me ? `<span class="${inQ ? 'pc' : 'okc'}">${inQ ? '⏳' : '✓✓'}</span><span style="font-size:8px;color:var(--dim)">${m.type === 'text' ? 'relay' : 'IPFS'}</span>` : '<span style="color:var(--pq);font-size:8px">PQ·E2E</span>'}</div>`;
     const type = m.type || 'text'; let body = '';
     const inTransfer = G.inTransfers?.[m.id];
     const prog = (m.payload?._prog !== undefined) ? m.payload._prog : inTransfer ? (inTransfer.received / inTransfer.meta.total) : undefined;

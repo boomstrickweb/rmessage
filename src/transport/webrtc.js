@@ -1,8 +1,9 @@
 import { hex, fhex, rnd } from '../utils.js';
-import { pqEncBin, pqDecBin } from '../crypto/mlkem.js';
+import { pqEncBin, pqDecBin, kemE, aesEncGCM } from '../crypto/mlkem.js';
 import { idbSave } from '../storage/crdt.js';
 import { nostrPub } from './nostr.js';
 import { renderMsgs } from '../ui/render.js';
+import { uploadToIPFS } from './ipfs.js';
 
 const G = window;
 
@@ -114,6 +115,7 @@ export class PCManager {
 
 export let PCM = null;
 export const inTransfers = {};
+// dcQ and processDCQ are deprecated in favor of IPFS media sending
 let dcQ = [];
 
 function updateP2PStatus(s) {
@@ -143,47 +145,8 @@ export function waitForGathering(pc, timeout = 8000) {
 }
 
 export async function onDCMsg(msg, peerPub) {
-  if (msg.type === 'tstart') { inTransfers[msg.tid] = { meta: msg, chunks: new Array(msg.total), received: 0 }; }
-  else if (msg.type === 'tchunk') {
-    const buf = inTransfers[msg.tid]; if (!buf) return;
-    try {
-      const dec = await pqDecBin(G._KKkeys.sk, msg.kem, msg.iv, msg.ct);
-      buf.chunks[msg.idx] = dec; buf.received++;
-      
-      // Update local op if it exists (for sender/receiver)
-      const op = G._C.ops.find(o => o.id === msg.tid);
-      if (op) { op.payload._prog = buf.received / msg.total; }
-      
-      // Incoming progress for UI
-      if (G.AP === peerPub) renderMsgs(); 
-      if (buf.received >= msg.total) {
-        let sz = 0; buf.chunks.forEach(c => { if (c) sz += c.length; });
-        const data = new Uint8Array(sz); let off = 0; buf.chunks.forEach(c => { if (c) { data.set(c, off); off += c.length; } });
-        delete inTransfers[msg.tid];
-        const { meta } = buf;
-        const mt = meta.mime.startsWith('image') ? 'image' : meta.mime.startsWith('audio') ? 'voice' : 'file';
-        const actualSrc = peerPub || 'unknown';
-        const op2 = { 
-          id: msg.tid, 
-          from: peerPub, 
-          to: G._NK.pub, 
-          lam: G._C.lam + 1, 
-          vc: { ...G._C.vc, [peerPub]: G._C.lam + 1 }, 
-          type: mt, 
-          payload: { 
-            _bytes: data, 
-            name: meta.name, 
-            size: meta.size, 
-            mimeType: meta.mime, 
-            duration: meta.dur || 0 
-          }, 
-          ts: Date.now() 
-        };
-        idbSave(msg.tid, data, meta.mime);
-        G._C.merge(op2); renderMsgs();
-      }
-    } catch (e) { console.error('P2P decrypt fail', e); }
-  } else if (msg.type === 'key_rotate') {
+  // Legacy P2P signaling/media messages
+  if (msg.type === 'key_rotate') {
     if (G.handleKeyRotate) G.handleKeyRotate(peerPub, msg);
   } else if (msg.type === 'key_rotate_resp') {
     if (G.handleKeyRotateResp) G.handleKeyRotateResp(peerPub, msg);
@@ -270,6 +233,7 @@ async function _dcSendFile(item) {
 }
 
 export async function ensureDC(peerPub) {
+  // WebRTC Data Channel is no longer used for media but might be used for future low-latency signaling
   if (PCM?.dcOpen() && PCM.peer === peerPub) return true;
   const peer = G._PEERS[peerPub]; if (!peer?.kyberPk) return false;
 
@@ -303,37 +267,57 @@ export function addToDCQ(item) { dcQ.push(item); processDCQ(); }
 export async function sendMedia(peerPub, file) {
   const peer = G._PEERS[peerPub];
   if (!peer?.kyberPk) { alert('Peer key missing. Send a text message first.'); return; }
-  const MAX_FILE_SIZE = 25 * 1024 * 1024;
-  if (file.size > MAX_FILE_SIZE) { alert('File too large. Max 25MB'); return; }
+  const MAX_FILE_SIZE = 100 * 1024 * 1024; // Increased for IPFS
+  if (file.size > MAX_FILE_SIZE) { alert('File too large. Max 100MB'); return; }
 
   const mt = file.type.startsWith('image') ? 'image' : file.type.startsWith('audio') ? 'voice' : 'file';
   const tid = hex(rnd(16));
   const ab = await file.arrayBuffer();
   const data = new Uint8Array(ab);
 
+  // 1. Create local CRDT op for UI
   const localOp = G._C.add(mt, {
     _bytes: data, name: file.name, size: file.size,
-    mimeType: file.type, duration: file._duration || 0, _prog: 0
+    mimeType: file.type, duration: file._duration || 0, _prog: 0.05
   }, peerPub);
   localOp.id = tid;
   idbSave(tid, data, file.type);
   G._C._save();
   renderMsgs();
 
-  dcQ.push({ peerPub, file, tid, data, localOp });
+  try {
+    // 2 & 4. Hybrid Local Crypto & PQC Encapsulation
+    const { ct: kemCiphertext, K: rawAesKey } = kemE(peer.kyberPk);
+    const { iv, ct: encryptedHex } = await aesEncGCM(rawAesKey, data);
+    const mediaBin = fhex(encryptedHex);
 
-  if (PCM?.dcOpen() && PCM.peer === peerPub) {
-    processDCQ();
-  } else {
-    const ok = await ensureDC(peerPub);
-    if (ok) {
-      processDCQ();
-    } else {
-      dcQ = dcQ.filter(q => q.tid !== tid);
-      const op = G._C.ops.find(o => o.id === tid);
-      if (op) { op.payload._prog = undefined; op.payload._failed = true; renderMsgs(); }
-      console.error('DC could not open for', peerPub);
-    }
+    // 3. API Ingestion: Send to Crust Cloud
+    localOp.payload._prog = 0.2; renderMsgs();
+    const cid = await uploadToIPFS(mediaBin, file.name + '.bin');
+    localOp.payload._prog = 0.8; renderMsgs();
+
+    // 5. Nostr Transit: Send CID + ML-KEM Ciphertext + metadata
+    const payload = {
+      type: 'ipfs_media',
+      id: tid,
+      cid: cid,
+      kem: kemCiphertext,
+      iv: iv,
+      mime: file.type,
+      name: file.name,
+      size: file.size,
+      dur: file._duration || 0
+    };
+
+    await nostrPub(peerPub, peer.kyberPk, payload, 4);
+
+    delete localOp.payload._prog;
+    renderMsgs();
+  } catch (e) {
+    console.error('IPFS Media Send Fail', e);
+    localOp.payload._prog = undefined;
+    localOp.payload._failed = true;
+    renderMsgs();
   }
 }
 

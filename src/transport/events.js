@@ -1,10 +1,12 @@
 import { td, fhex, te, hex } from '../utils.js';
-import { kemD, aesDec } from '../crypto/mlkem.js';
+import { kemD, aesDec, aesDecGCM } from '../crypto/mlkem.js';
 import { renderMsgs, renderContacts, showBadge } from '../ui/render.js';
 import { markOnline, handleOnionRelay } from './onion.js';
 import { nostrPub } from './nostr.js';
 import { unpadPlain } from './padding.js';
 import { PCM, onDCMsg, sanitizeSDP, PCManager, setPCM, waitForGathering } from './webrtc.js';
+import { fetchFromIPFS } from './ipfs.js';
+import { idbSave } from '../storage/crdt.js';
 import { stampDeniable, verifyDeniable } from '../crypto/ratchet.js';
 import { SHA3_256 } from '../crypto/sha3.js';
 import { mldsaSign } from '../crypto/mldsa.js';
@@ -213,6 +215,11 @@ export async function onEv(ev) {
     return;
   }
 
+  if (obj.type === 'ipfs_media') {
+    await handleIPFSMedia(obj, realSender);
+    return;
+  }
+
   if (!obj.id || !obj.type || obj.type === '__pad__') return;
   if (isExpired(obj)) return;
   obj._nostrId = ev.id;
@@ -268,5 +275,58 @@ async function handleSignaling(obj) {
     if (G.onCallReject) G.onCallReject();
   } else if (type === 'end') {
     if (G.onCallEnd) G.onCallEnd();
+  }
+}
+
+async function handleIPFSMedia(msg, peerPub) {
+  const mt = msg.mime.startsWith('image') ? 'image' : msg.mime.startsWith('audio') ? 'voice' : 'file';
+  const op = {
+    id: msg.id,
+    from: peerPub,
+    to: G._NK.pub,
+    lam: G._C.lam + 1,
+    vc: { ...G._C.vc, [peerPub]: G._C.lam + 1 },
+    type: mt,
+    payload: {
+      name: msg.name,
+      size: msg.size,
+      mimeType: msg.mime,
+      duration: msg.dur || 0,
+      _prog: 0.01 // Mark as downloading
+    },
+    ts: Date.now()
+  };
+
+  if (G._C.merge(op)) {
+    if (G.AP === peerPub) renderMsgs();
+    else { renderContacts(); showBadge(); }
+  }
+
+  try {
+    // 9. Background Pull: Fetch encrypted media.bin from IPFS
+    const encryptedBin = await fetchFromIPFS(msg.cid);
+    
+    // 8. PQC Decapsulation: Use ML-KEM to extract aesKey
+    const aesKey = kemD(msg.kem, G._KKkeys.sk);
+
+    // 10. Local AES Decrypt: Decrypt media.bin on-device
+    const decrypted = await aesDecGCM(aesKey, msg.iv, hex(encryptedBin));
+
+    // 11. UI Rendering: Save to IDB and update CRDT
+    idbSave(msg.id, decrypted, msg.mime);
+    const savedOp = G._C.ops.find(o => o.id === msg.id);
+    if (savedOp) {
+      savedOp.payload._bytes = decrypted;
+      delete savedOp.payload._prog;
+      renderMsgs();
+    }
+  } catch (e) {
+    console.error('IPFS Media download/decrypt fail', e);
+    const savedOp = G._C.ops.find(o => o.id === msg.id);
+    if (savedOp) {
+      savedOp.payload._failed = true;
+      delete savedOp.payload._prog;
+      renderMsgs();
+    }
   }
 }

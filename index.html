@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="description" content="RELAY — Post-quantum secure P2P messenger. ML-KEM-768 · ML-DSA-44 · Double Ratchet · TURN-only.">
+<meta name="description" content="RELAY — Post-quantum secure P2P messenger. ML-KEM-768 · ML-DSA-44 · Double Ratchet · IPFS + Crust.">
 <title>RELAY</title>
 <link rel="icon" type="image/x-icon" href="./favicon.ico">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
@@ -300,7 +300,7 @@ select.inp-f{cursor:pointer}
   <div class="inc-t">Incoming Call</div>
   <div class="av" id="incAv" style="width:76px;height:76px;border-radius:18px;font-size:34px;margin:0 auto"></div>
   <div class="inc-n" id="incName">—</div>
-  <div class="inc-s">🔐 ML-KEM-768 · DTLS-SRTP · TURN-only</div>
+  <div class="inc-s">🔐 ML-KEM-768 · DTLS-SRTP · IPFS + Crust</div>
   <div class="inc-bs">
     <button class="inc-rej" onclick="rejectCall()">📵</button>
     <button class="inc-ans" onclick="answerCall()">📞</button>
@@ -389,7 +389,7 @@ select.inp-f{cursor:pointer}
       <div class="empty-chat">
         <div class="eg">⬡</div>
         <div class="et">RELAY</div>
-        <div class="es">Text · Photo · Voice · Call<br><b>ML-KEM-768 · TURN-only · End-to-End Encrypted</b></div>
+        <div class="es">Text · Photo · Voice · Call<br><b>ML-KEM-768 · IPFS + Crust · End-to-End Encrypted</b></div>
       </div>
     </div>
     <div class="iz">
@@ -412,7 +412,7 @@ select.inp-f{cursor:pointer}
       <div class="call-nm" id="callNm">—</div>
       <div class="call-st" id="callSt">—</div>
       <div class="call-tm" id="callTm">00:00</div>
-      <div class="sec-badge"><div class="sec-dot"></div>ML-KEM-768 · DTLS-SRTP · PFS · TURN-only</div>
+      <div class="sec-badge"><div class="sec-dot"></div>ML-KEM-768 · DTLS-SRTP · PFS · IPFS + Crust</div>
       <div class="viz" id="viz"></div>
       <div class="call-ctrls">
         <div class="cc">
@@ -477,7 +477,7 @@ select.inp-f{cursor:pointer}
         <div class="card-t">Architecture</div>
         <div style="font-size:10px;color:var(--mut);line-height:2.4">
           💬 Text → Nostr relay · Sealed Sender · Double Ratchet<br>
-          🎙🖼📎 Media → CF TURN · DataChannel · max 25 MB<br>
+          🎙🖼📎 Media → IPFS + Crust · PQC Hybrid · 100 MB<br>
           📞 Call → CF TURN · relay-only · IP fully hidden<br>
           🔄 ICE Restart: every 5 min · no traffic correlation<br>
           ⏱ Disappearing messages: 1h / 24h / 7d / never<br>

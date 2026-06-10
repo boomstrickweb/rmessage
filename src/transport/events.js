@@ -1,13 +1,13 @@
-import { td, fhex, te, hex } from '../utils.js';
-import { kemD, aesDec, aesDecGCM } from '../crypto/mlkem.js';
+import { td, te, hex } from '../utils.js';
+import { kemD, aesDecGCM } from '../crypto/mlkem.js';
 import { renderMsgs, renderContacts, showBadge } from '../ui/render.js';
 import { markOnline, handleOnionRelay } from './onion.js';
 import { nostrPub } from './nostr.js';
 import { unpadPlain } from './padding.js';
-import { PCM, onDCMsg, sanitizeSDP, PCManager, setPCM, waitForGathering } from './webrtc.js';
+import { PCM, sanitizeSDP, PCManager, setPCM, waitForGathering } from './webrtc.js';
 import { fetchFromIPFS } from './ipfs.js';
 import { idbSave } from '../storage/crdt.js';
-import { stampDeniable, verifyDeniable } from '../crypto/ratchet.js';
+import { verifyDeniable } from '../crypto/ratchet.js';
 import { SHA3_256 } from '../crypto/sha3.js';
 import { mldsaSign } from '../crypto/mldsa.js';
 

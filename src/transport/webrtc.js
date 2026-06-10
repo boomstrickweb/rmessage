@@ -1,5 +1,5 @@
 import { hex, fhex, rnd } from '../utils.js';
-import { pqEncBin, pqDecBin, kemE, aesEncGCM } from '../crypto/mlkem.js';
+import { pqEncBin, kemE, aesEncGCM } from '../crypto/mlkem.js';
 import { idbSave } from '../storage/crdt.js';
 import { nostrPub } from './nostr.js';
 import { renderMsgs } from '../ui/render.js';
@@ -267,7 +267,7 @@ export function addToDCQ(item) { dcQ.push(item); processDCQ(); }
 export async function sendMedia(peerPub, file) {
   const peer = G._PEERS[peerPub];
   if (!peer?.kyberPk) { alert('Peer key missing. Send a text message first.'); return; }
-  const MAX_FILE_SIZE = 100 * 1024 * 1024; // Increased for IPFS
+  const MAX_FILE_SIZE = 100 * 1024 * 1024; // Increased for IPFS (100MB)
   if (file.size > MAX_FILE_SIZE) { alert('File too large. Max 100MB'); return; }
 
   const mt = file.type.startsWith('image') ? 'image' : file.type.startsWith('audio') ? 'voice' : 'file';

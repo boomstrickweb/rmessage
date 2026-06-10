@@ -52,7 +52,7 @@ export function renderMsgs() {
   const el = document.getElementById('msgs'); if (!G.AP) return;
   const ms = G._C.chat(G._NK.pub, G.AP);
   if (!ms.length) {
-    el.innerHTML = '<div class="empty-chat"><div class="eg">⬡</div><div class="et">RELAY</div><div class="es">Text · Photo · Voice · Call<br><b>ML-KEM-768 · TURN · E2EE</b></div></div>';
+    el.innerHTML = '<div class="empty-chat"><div class="eg">⬡</div><div class="et">RELAY</div><div class="es">Text · Photo · Voice · Call<br><b>ML-KEM-768 · IPFS + Crust · E2EE</b></div></div>';
     return;
   }
   el.innerHTML = ms.map(m => {
@@ -71,7 +71,7 @@ export function renderMsgs() {
         body = `<div class="mb mb-prog"><div>${esc(m.payload?.name || 'Photo')}</div><div class="pb-w"><div class="pb" style="width:${Math.round(prog * 100)}%"></div></div><div class="pb-info"><span>${Math.round((m.payload?.size || 0) / 1024)}KB</span><span>${Math.round(prog * 100)}%</span></div></div>`;
       } else if (m.payload?._bytes) {
         const url = getBlobUrl(m.payload);
-        body = url ? `<div class="mb" style="padding:4px"><img class="mb-img" src="${url}" onclick="openImg('${url}')" loading="lazy"/></div>` : `<div class="mb"><span style="color:var(--mut)">🖼 Photo</span></div>`;
+        body = url ? `<div class="mb" style="padding:4px"><img class="mb-img" src="${url}" onclick="openImg('${url}')" loading="lazy" alt="Image"/></div>` : `<div class="mb"><span style="color:var(--mut)">🖼 Photo</span></div>`;
       } else if (m.payload?._failed) {
         body = `<div class="mb p2p-wait" style="color:var(--red)">❌ ${esc(m.payload?.name || 'Photo')} — failed</div>`;
       } else {
